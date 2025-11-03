@@ -1,33 +1,26 @@
 import { MongoClient, ServerApiVersion } from "mongodb";
-import dotenv from "dotenv";
-dotenv.config();
+import { config } from "dotenv";
+config({ path: "./.env" });
 
-const uri = process.env.ATLAS_URI;
-if (!uri) {
-  throw new Error("❌ Missing ATLAS_URI in environment variables");
-}
-
+const uri = process.env.ATLAS_URI || "";
 const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+    }
 });
 
-let db;
-
-export async function connectToDatabase() {
-  if (db) return db; // reuse existing connection
-
-  try {
+try {
+    // Connect the client to the server
     await client.connect();
-    await client.db("admin").command({ ping: 1 });
-    console.log("✅ Connected to MongoDB Atlas");
-    db = client.db("sample_mflix");
-    return db;
-  } catch (err) {
-    console.error("❌ MongoDB connection failed:", err);
-    throw err;
-  }
+    // Ping to confirm successful connection
+    await client.db("admin").command({ ping: 1});
+    console.log("Pinged your deployment. Successfully connected to MongoDB!");
+} catch (err) {
+    console.log(err)
 }
+
+let db = client.db("sample_mflix")
+
+export default db;
