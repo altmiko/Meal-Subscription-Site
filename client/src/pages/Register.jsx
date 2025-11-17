@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-export default function Login() {
+export default function Register() {
 	const [formData, setFormData] = useState({
+		name: '',
 		email: '',
 		password: '',
+		confirmPassword: '',
 	});
 
 	const handleChange = (e) => {
@@ -16,8 +18,12 @@ export default function Login() {
 
 	const handleSubmit = (e) => {
 		e.preventDefault();
-		// Handle login logic here
-		console.log('Login:', formData);
+		if (formData.password !== formData.confirmPassword) {
+			alert('Passwords do not match!');
+			return;
+		}
+		// Handle registration logic here
+		console.log('Register:', formData);
 	};
 
 	return (
@@ -27,13 +33,32 @@ export default function Login() {
 					{/* Header */}
 					<div className="text-center mb-8">
 						<h1 className="text-3xl font-bold text-gray-800 mb-2">
-							Login
+							Create Account
 						</h1>
-						<p className="text-gray-600">Welcome back to NomNom</p>
+						<p className="text-gray-600">Join NomNom today</p>
 					</div>
 
-					{/* Login Form */}
+					{/* Registration Form */}
 					<form onSubmit={handleSubmit} className="space-y-6">
+						<div>
+							<label
+								htmlFor="name"
+								className="block text-sm font-medium text-gray-700 mb-2"
+							>
+								Full Name
+							</label>
+							<input
+								type="text"
+								id="name"
+								name="name"
+								value={formData.name}
+								onChange={handleChange}
+								required
+								className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-green-400 focus:outline-none transition-all"
+								placeholder="John Doe"
+							/>
+						</div>
+
 						<div>
 							<label
 								htmlFor="email"
@@ -67,34 +92,67 @@ export default function Login() {
 								value={formData.password}
 								onChange={handleChange}
 								required
+								minLength={6}
+								className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-green-400 focus:outline-none transition-all"
+								placeholder="••••••••"
+							/>
+							<p className="mt-1 text-xs text-gray-500">
+								Must be at least 6 characters
+							</p>
+						</div>
+
+						<div>
+							<label
+								htmlFor="confirmPassword"
+								className="block text-sm font-medium text-gray-700 mb-2"
+							>
+								Confirm Password
+							</label>
+							<input
+								type="password"
+								id="confirmPassword"
+								name="confirmPassword"
+								value={formData.confirmPassword}
+								onChange={handleChange}
+								required
 								className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-green-400 focus:outline-none transition-all"
 								placeholder="••••••••"
 							/>
 						</div>
 
-						<div className="flex items-center justify-between">
-							<label className="flex items-center">
-								<input
-									type="checkbox"
-									className="rounded border-gray-300 text-green-500 focus:ring-green-400"
-								/>
-								<span className="ml-2 text-sm text-gray-600">
-									Remember me
-								</span>
-							</label>
-							<a
-								href="#"
-								className="text-sm text-green-500 hover:text-green-600 cursor-pointer"
+						<div className="flex items-start">
+							<input
+								type="checkbox"
+								id="terms"
+								required
+								className="mt-1 rounded border-gray-300 text-green-500 focus:ring-green-400"
+							/>
+							<label
+								htmlFor="terms"
+								className="ml-2 text-sm text-gray-600"
 							>
-								Forgot password?
-							</a>
+								I agree to the{' '}
+								<a
+									href="#"
+									className="text-green-500 hover:text-green-600 cursor-pointer"
+								>
+									Terms of Service
+								</a>{' '}
+								and{' '}
+								<a
+									href="#"
+									className="text-green-500 hover:text-green-600 cursor-pointer"
+								>
+									Privacy Policy
+								</a>
+							</label>
 						</div>
 
 						<button
 							type="submit"
 							className="w-full bg-gradient-to-r from-green-300 to-emerald-400 text-white py-3 rounded-full font-semibold hover:from-green-400 hover:to-emerald-500 transition-all shadow-md hover:shadow-lg cursor-pointer"
 						>
-							Login
+							Create Account
 						</button>
 					</form>
 
@@ -105,27 +163,27 @@ export default function Login() {
 						<div className="flex-1 border-t border-gray-200"></div>
 					</div>
 
-					{/* Social Login */}
+					{/* Social Registration */}
 					<div className="space-y-3">
 						<button className="w-full border-2 border-gray-200 py-3 rounded-full font-medium hover:bg-gray-50 transition-all cursor-pointer flex items-center justify-center gap-2">
 							<span>🔵</span>
-							Continue with Google
+							Sign up with Google
 						</button>
 						<button className="w-full border-2 border-gray-200 py-3 rounded-full font-medium hover:bg-gray-50 transition-all cursor-pointer flex items-center justify-center gap-2">
 							<span>⚫</span>
-							Continue with Facebook
+							Sign up with Facebook
 						</button>
 					</div>
 
-					{/* Sign Up Link */}
+					{/* Login Link */}
 					<div className="mt-6 text-center">
 						<p className="text-gray-600">
-							Don't have an account?{' '}
+							Already have an account?{' '}
 							<Link
-								to="/register"
+								to="/login"
 								className="text-green-500 font-semibold hover:text-green-600 cursor-pointer"
 							>
-								Sign up
+								Log in
 							</Link>
 						</p>
 					</div>
