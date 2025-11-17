@@ -1,29 +1,76 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import axiosInstance from '../api/axios';
 
 export default function Register() {
+	const navigate = useNavigate();
 	const [formData, setFormData] = useState({
 		name: '',
 		email: '',
+		phone: '',
 		password: '',
 		confirmPassword: '',
 	});
+	const [error, setError] = useState('');
+	const [loading, setLoading] = useState(false);
 
 	const handleChange = (e) => {
 		setFormData({
 			...formData,
 			[e.target.name]: e.target.value,
 		});
+		setError('');
 	};
 
-	const handleSubmit = (e) => {
+	const handleSubmit = async (e) => {
 		e.preventDefault();
+		setError('');
+		setLoading(true);
+
+		// Validate passwords match
 		if (formData.password !== formData.confirmPassword) {
-			alert('Passwords do not match!');
+			setError('Passwords do not match!');
+			setLoading(false);
 			return;
 		}
-		// Handle registration logic here
-		console.log('Register:', formData);
+
+		// Validate password length
+		if (formData.password.length < 6) {
+			setError('Password must be at least 6 characters long');
+			setLoading(false);
+			return;
+		}
+
+		try {
+			const response = await axiosInstance.post('/api/auth/register', {
+				name: formData.name,
+				email: formData.email,
+				phone: formData.phone,
+				password: formData.password,
+			});
+
+			if (response.data.success) {
+				// Store token in localStorage
+				localStorage.setItem('token', response.data.data.token);
+				localStorage.setItem(
+					'user',
+					JSON.stringify(response.data.data.user)
+				);
+
+				// Redirect to home page or dashboard
+				navigate('/');
+			} else {
+				setError(response.data.message || 'Registration failed');
+			}
+		} catch (err) {
+			setError(
+				err.response?.data?.message ||
+					err.message ||
+					'An error occurred during registration'
+			);
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	return (
@@ -37,6 +84,13 @@ export default function Register() {
 						</h1>
 						<p className="text-gray-600">Join NomNom today</p>
 					</div>
+
+					{/* Error Message */}
+					{error && (
+						<div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+							{error}
+						</div>
+					)}
 
 					{/* Registration Form */}
 					<form onSubmit={handleSubmit} className="space-y-6">
@@ -75,6 +129,25 @@ export default function Register() {
 								required
 								className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-green-400 focus:outline-none transition-all"
 								placeholder="your@email.com"
+							/>
+						</div>
+
+						<div>
+							<label
+								htmlFor="phone"
+								className="block text-sm font-medium text-gray-700 mb-2"
+							>
+								Phone
+							</label>
+							<input
+								type="tel"
+								id="phone"
+								name="phone"
+								value={formData.phone}
+								onChange={handleChange}
+								required
+								className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-green-400 focus:outline-none transition-all"
+								placeholder="01234567890"
 							/>
 						</div>
 
@@ -120,60 +193,14 @@ export default function Register() {
 							/>
 						</div>
 
-						<div className="flex items-start">
-							<input
-								type="checkbox"
-								id="terms"
-								required
-								className="mt-1 rounded border-gray-300 text-green-500 focus:ring-green-400"
-							/>
-							<label
-								htmlFor="terms"
-								className="ml-2 text-sm text-gray-600"
-							>
-								I agree to the{' '}
-								<a
-									href="#"
-									className="text-green-500 hover:text-green-600 cursor-pointer"
-								>
-									Terms of Service
-								</a>{' '}
-								and{' '}
-								<a
-									href="#"
-									className="text-green-500 hover:text-green-600 cursor-pointer"
-								>
-									Privacy Policy
-								</a>
-							</label>
-						</div>
-
 						<button
 							type="submit"
-							className="w-full bg-gradient-to-r from-green-300 to-emerald-400 text-white py-3 rounded-full font-semibold hover:from-green-400 hover:to-emerald-500 transition-all shadow-md hover:shadow-lg cursor-pointer"
+							disabled={loading}
+							className="w-full bg-gradient-to-r from-green-300 to-emerald-400 text-white py-3 rounded-full font-semibold hover:from-green-400 hover:to-emerald-500 transition-all shadow-md hover:shadow-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
 						>
-							Create Account
+							{loading ? 'Creating Account...' : 'Create Account'}
 						</button>
 					</form>
-
-					{/* Divider */}
-					<div className="my-6 flex items-center">
-						<div className="flex-1 border-t border-gray-200"></div>
-						<span className="px-4 text-sm text-gray-500">OR</span>
-						<div className="flex-1 border-t border-gray-200"></div>
-					</div>
-
-					{/* Social Registration */}
-					<div className="space-y-3">
-						<button className="w-full border-2 border-gray-200 py-3 rounded-full font-medium hover:bg-gray-50 transition-all cursor-pointer flex items-center justify-center gap-2">
-							<span>🔵</span>
-							Sign up with Google
-						</button>
-						<button className="w-full border-2 border-gray-200 py-3 rounded-full font-medium hover:bg-gray-50 transition-all cursor-pointer flex items-center justify-center gap-2">
-							<span>⚫</span>
-							Sign up with Facebook
-						</button>
-					</div>
 
 					{/* Login Link */}
 					<div className="mt-6 text-center">

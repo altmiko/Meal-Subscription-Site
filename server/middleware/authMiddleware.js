@@ -19,6 +19,13 @@ export const protect = async (req, res, next) => {
 			});
 		}
 
+		if (!process.env.JWT_SECRET) {
+			return res.status(500).json({
+				success: false,
+				message: 'Server configuration error. JWT_SECRET is not set.',
+			});
+		}
+
 		const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
 		const user = await User.findById(decoded.id).select('-password');

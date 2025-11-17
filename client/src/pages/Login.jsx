@@ -98,25 +98,6 @@ export default function Login() {
 						</button>
 					</form>
 
-					{/* Divider */}
-					<div className="my-6 flex items-center">
-						<div className="flex-1 border-t border-gray-200"></div>
-						<span className="px-4 text-sm text-gray-500">OR</span>
-						<div className="flex-1 border-t border-gray-200"></div>
-					</div>
-
-					{/* Social Login */}
-					<div className="space-y-3">
-						<button className="w-full border-2 border-gray-200 py-3 rounded-full font-medium hover:bg-gray-50 transition-all cursor-pointer flex items-center justify-center gap-2">
-							<span>🔵</span>
-							Continue with Google
-						</button>
-						<button className="w-full border-2 border-gray-200 py-3 rounded-full font-medium hover:bg-gray-50 transition-all cursor-pointer flex items-center justify-center gap-2">
-							<span>⚫</span>
-							Continue with Facebook
-						</button>
-					</div>
-
 					{/* Sign Up Link */}
 					<div className="mt-6 text-center">
 						<p className="text-gray-600">

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-const options = { discriminatorKey: 'type' };
+const options = { discriminatorKey: 'role' };
 
 const UserSchema = new mongoose.Schema(
 	{
