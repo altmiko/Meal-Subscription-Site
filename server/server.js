@@ -6,7 +6,7 @@ import { dirname, join } from 'path';
 import connectDB from './db/connection.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/authRoutes.js';
-import restaurantRoutes from './routes/restaurant.routes.js';
+import restaurantRoutes from './routes/restaurantRoutes.js';
 
 // Get the directory name of the current module
 const __filename = fileURLToPath(import.meta.url);
