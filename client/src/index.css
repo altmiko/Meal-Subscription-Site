@@ -1,1 +1,17 @@
 @import "tailwindcss";
+
+@font-face {
+  font-family: 'Benton Sans MD';
+  src: url('/fonts/BentonSans Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-family-sans: 'Benton Sans MD', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  font-family: 'Benton Sans MD', system-ui, -apple-system, sans-serif;
+}
