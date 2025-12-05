@@ -1,7 +1,11 @@
 import axios from 'axios';
 
+// Use environment variable for API URL, default to localhost for development
+// Set VITE_API_URL in .env file to switch between local and production
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050';
+
 const axiosInstance = axios.create({
-	baseURL: 'https://meal-subscription-backend.onrender.com', // Your backend URL
+	baseURL: API_URL,
 	timeout: 10000,
 	headers: {
 		'Content-Type': 'application/json',
