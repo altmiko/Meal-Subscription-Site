@@ -1,23 +1,69 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import axiosInstance from '../api/axios';
 
 export default function Login() {
+	const navigate = useNavigate();
 	const [formData, setFormData] = useState({
 		email: '',
 		password: '',
 	});
+	const [error, setError] = useState('');
+	const [loading, setLoading] = useState(false);
 
 	const handleChange = (e) => {
 		setFormData({
 			...formData,
 			[e.target.name]: e.target.value,
 		});
+		setError('');
 	};
 
-	const handleSubmit = (e) => {
+	const handleSubmit = async (e) => {
 		e.preventDefault();
-		// Handle login logic here
-		console.log('Login:', formData);
+		setError('');
+		setLoading(true);
+
+		try {
+			const response = await axiosInstance.post('/api/auth/login', {
+				email: formData.email,
+				password: formData.password,
+			});
+
+			if (response.data.success) {
+				// Store token and user data
+				localStorage.setItem('token', response.data.data.token);
+				localStorage.setItem(
+					'user',
+					JSON.stringify(response.data.data.user)
+				);
+
+				// Notify Navbar of login
+				window.dispatchEvent(new Event('userLogin'));
+
+				// Redirect based on role
+				const role = response.data.data.user.role;
+				if (role === 'customer') {
+					navigate('/dashboard/customer');
+				} else if (role === 'restaurant') {
+					navigate('/dashboard/restaurant');
+				} else if (role === 'deliveryStaff') {
+					navigate('/dashboard/delivery-staff');
+				} else {
+					navigate('/');
+				}
+			} else {
+				setError(response.data.message || 'Login failed');
+			}
+		} catch (err) {
+			setError(
+				err.response?.data?.message ||
+					err.message ||
+					'An error occurred during login'
+			);
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	return (
@@ -31,6 +77,13 @@ export default function Login() {
 						</h1>
 						<p className="text-gray-600">Welcome back to NomNom</p>
 					</div>
+
+					{/* Error Message */}
+					{error && (
+						<div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+							{error}
+						</div>
+					)}
 
 					{/* Login Form */}
 					<form onSubmit={handleSubmit} className="space-y-6">
@@ -92,9 +145,10 @@ export default function Login() {
 
 						<button
 							type="submit"
-							className="w-full bg-gradient-to-r from-green-300 to-emerald-400 text-white py-3 rounded-full font-semibold hover:from-green-400 hover:to-emerald-500 transition-all shadow-md hover:shadow-lg cursor-pointer"
+							disabled={loading}
+							className="w-full bg-gradient-to-r from-green-300 to-emerald-400 text-white py-3 rounded-full font-semibold hover:from-green-400 hover:to-emerald-500 transition-all shadow-md hover:shadow-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
 						>
-							Login
+							{loading ? 'Logging in...' : 'Login'}
 						</button>
 					</form>
 

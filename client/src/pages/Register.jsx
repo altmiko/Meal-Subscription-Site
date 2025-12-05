@@ -5,6 +5,7 @@ import axiosInstance from '../api/axios';
 export default function Register() {
 	const navigate = useNavigate();
 	const [formData, setFormData] = useState({
+		role: '',
 		name: '',
 		email: '',
 		phone: '',
@@ -13,6 +14,29 @@ export default function Register() {
 	});
 	const [error, setError] = useState('');
 	const [loading, setLoading] = useState(false);
+	const roles = [
+		{
+			id: 'customer',
+			title: 'Customer',
+			icon: '🛍️',
+			description: 'Order food from your favorite restaurants',
+			color: 'from-blue-400 to-blue-600',
+		},
+		{
+			id: 'deliveryStaff',
+			title: 'Delivery Staff',
+			icon: '🏍️',
+			description: 'Deliver orders and earn money',
+			color: 'from-green-400 to-green-600',
+		},
+		{
+			id: 'restaurant',
+			title: 'Restaurant',
+			icon: '🍽️',
+			description: 'Manage your restaurant and menu',
+			color: 'from-orange-400 to-orange-600',
+		},
+	];
 
 	const handleChange = (e) => {
 		setFormData({
@@ -26,6 +50,13 @@ export default function Register() {
 		e.preventDefault();
 		setError('');
 		setLoading(true);
+
+		// Validate role is selected
+		if (!formData.role) {
+			setError('Please select a role');
+			setLoading(false);
+			return;
+		}
 
 		// Validate passwords match
 		if (formData.password !== formData.confirmPassword) {
@@ -47,6 +78,7 @@ export default function Register() {
 				email: formData.email,
 				phone: formData.phone,
 				password: formData.password,
+				role: formData.role,
 			});
 
 			if (response.data.success) {
@@ -57,8 +89,20 @@ export default function Register() {
 					JSON.stringify(response.data.data.user)
 				);
 
-				// Redirect to home page or dashboard
-				navigate('/');
+				// Notify Navbar of login
+				window.dispatchEvent(new Event('userLogin'));
+
+				// Redirect based on role
+				const role = response.data.data.user.role;
+				if (role === 'customer') {
+					navigate('/dashboard/customer');
+				} else if (role === 'restaurant') {
+					navigate('/dashboard/restaurant');
+				} else if (role === 'deliveryStaff') {
+					navigate('/dashboard/delivery-staff');
+				} else {
+					navigate('/');
+				}
 			} else {
 				setError(response.data.message || 'Registration failed');
 			}
@@ -94,6 +138,65 @@ export default function Register() {
 
 					{/* Registration Form */}
 					<form onSubmit={handleSubmit} className="space-y-6">
+						{/* Role Selector */}
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-3">
+								I want to register as
+							</label>
+							<div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+								{roles.map((role) => {
+									const isSelected =
+										formData.role === role.id;
+									return (
+										<button
+											key={role.id}
+											type="button"
+											onClick={() => {
+												setFormData({
+													...formData,
+													role: role.id,
+												});
+												setError('');
+											}}
+											className={`
+												p-4 rounded-lg border-2 transition-all
+												text-left flex flex-col items-center justify-center
+												hover:shadow-lg transform hover:-translate-y-1
+												${
+													isSelected
+														? `bg-gradient-to-br ${role.color} text-white border-transparent shadow-md`
+														: 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
+												}
+											`}
+										>
+											<span className="text-3xl mb-2">
+												{role.icon}
+											</span>
+											<span
+												className={`font-semibold text-sm ${
+													isSelected
+														? 'text-white'
+														: 'text-gray-800'
+												}`}
+											>
+												{role.title}
+											</span>
+										</button>
+									);
+								})}
+							</div>
+							{formData.role && (
+								<p className="mt-3 text-sm text-gray-600 text-center">
+									{
+										roles.find(
+											(r) => r.id === formData.role
+										)?.description
+									}
+								</p>
+							)}
+						</div>
+
+						{/* Full Name */}
 						<div>
 							<label
 								htmlFor="name"

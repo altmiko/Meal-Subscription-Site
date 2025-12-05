@@ -1,12 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function Navbar() {
 	const [isOpen, setIsOpen] = useState(false);
+	const [user, setUser] = useState(null);
 	const location = useLocation();
 	const navigate = useNavigate();
 	const activePath = location.pathname;
+
+	// Check if user is logged in and update state
+	useEffect(() => {
+		const checkUser = () => {
+			const userData = localStorage.getItem('user');
+			if (userData) {
+				try {
+					setUser(JSON.parse(userData));
+				} catch (err) {
+					console.error('Error parsing user data:', err);
+					localStorage.removeItem('user');
+					localStorage.removeItem('token');
+					setUser(null);
+				}
+			} else {
+				setUser(null);
+			}
+		};
+
+		checkUser();
+
+		// Listen for storage changes (when user logs in/out in another tab)
+		window.addEventListener('storage', checkUser);
+
+		// Listen for custom event when user logs in/out
+		window.addEventListener('userLogin', checkUser);
+
+		return () => {
+			window.removeEventListener('storage', checkUser);
+			window.removeEventListener('userLogin', checkUser);
+		};
+	}, [location.pathname]); // Re-check when route changes
 
 	const navLinks = [
 		{ name: 'Home', path: '/' },
@@ -15,6 +48,20 @@ export default function Navbar() {
 	];
 
 	const handleNavClick = () => {
+		setIsOpen(false);
+	};
+
+	const handleDashboardClick = () => {
+		if (!user) return;
+
+		const role = user.role;
+		if (role === 'customer') {
+			navigate('/dashboard/customer');
+		} else if (role === 'restaurant') {
+			navigate('/dashboard/restaurant');
+		} else if (role === 'deliveryStaff') {
+			navigate('/dashboard/delivery-staff');
+		}
 		setIsOpen(false);
 	};
 
@@ -60,14 +107,34 @@ export default function Navbar() {
 							))}
 						</div>
 
-						{/* Login/Register button on the right */}
+						{/* User menu or Login/Register button on the right */}
 						<div className="flex items-center gap-4 flex-shrink-0">
-							<button
-								onClick={() => navigate('/login')}
-								className="bg-gradient-to-r from-green-300 to-emerald-400 text-white px-6 py-2.5 rounded-full font-semibold hover:from-green-400 hover:to-emerald-500 transition-all shadow-md hover:shadow-lg text-sm cursor-pointer"
-							>
-								Login / Register
-							</button>
+							{user ? (
+								<div className="flex items-center gap-3">
+									<button
+										onClick={handleDashboardClick}
+										className="flex items-center gap-2 px-4 py-2.5 rounded-full font-semibold hover:bg-gray-100 transition-all text-sm cursor-pointer text-gray-700"
+									>
+										<div className="w-8 h-8 bg-gradient-to-br from-green-300 to-emerald-400 rounded-full flex items-center justify-center">
+											<span className="text-white font-bold text-xs">
+												{user.name
+													?.charAt(0)
+													.toUpperCase() || 'U'}
+											</span>
+										</div>
+										<span className="hidden sm:inline">
+											{user.name}
+										</span>
+									</button>
+								</div>
+							) : (
+								<button
+									onClick={() => navigate('/login')}
+									className="bg-gradient-to-r from-green-300 to-emerald-400 text-white px-6 py-2.5 rounded-full font-semibold hover:from-green-400 hover:to-emerald-500 transition-all shadow-md hover:shadow-lg text-sm cursor-pointer"
+								>
+									Login / Register
+								</button>
+							)}
 							{/* Mobile navigation toggle */}
 							<div className="lg:hidden">
 								<button
@@ -104,15 +171,35 @@ export default function Navbar() {
 										{link.name}
 									</Link>
 								))}
-								<button
-									onClick={() => {
-										navigate('/login');
-										handleNavClick();
-									}}
-									className="w-full bg-gradient-to-r from-green-300 to-emerald-400 text-white px-4 py-3 rounded-lg text-sm font-semibold hover:from-green-400 hover:to-emerald-500 transition-all mt-2 shadow-md cursor-pointer"
-								>
-									Login / Register
-								</button>
+								{user ? (
+									<>
+										<button
+											onClick={() => {
+												handleDashboardClick();
+											}}
+											className="w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all cursor-pointer flex items-center gap-2"
+										>
+											<div className="w-8 h-8 bg-gradient-to-br from-green-300 to-emerald-400 rounded-full flex items-center justify-center">
+												<span className="text-white font-bold text-xs">
+													{user.name
+														?.charAt(0)
+														.toUpperCase() || 'U'}
+												</span>
+											</div>
+											<span>{user.name}</span>
+										</button>
+									</>
+								) : (
+									<button
+										onClick={() => {
+											navigate('/login');
+											handleNavClick();
+										}}
+										className="w-full bg-gradient-to-r from-green-300 to-emerald-400 text-white px-4 py-3 rounded-lg text-sm font-semibold hover:from-green-400 hover:to-emerald-500 transition-all mt-2 shadow-md cursor-pointer"
+									>
+										Login / Register
+									</button>
+								)}
 							</div>
 						</div>
 					</div>

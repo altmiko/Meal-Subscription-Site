@@ -1,8 +1,10 @@
-import { Restaurant } from '../models/Restaurant.js';
+import { User } from '../models/User.js';
 
 export const createRestaurant = async (req, res) => {
 	try {
-		const restaurant = await Restaurant.create(req.body);
+		// Ensure role is set to restaurant
+		const restaurantData = { ...req.body, role: 'restaurant' };
+		const restaurant = await User.create(restaurantData);
 		res.status(201).json(restaurant);
 	} catch (err) {
 		res.status(400).json({ error: err.message });
@@ -11,7 +13,7 @@ export const createRestaurant = async (req, res) => {
 
 export const getAllRestaurants = async (req, res) => {
 	try {
-		const restaurants = await Restaurant.find();
+		const restaurants = await User.find({ role: 'restaurant' });
 		res.json(restaurants);
 	} catch (err) {
 		res.status(500).json({ error: err.message });

@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import { Restaurant } from './models/Restaurant.js';
 import { User } from './models/User.js';
 
 dotenv.config();
@@ -14,7 +13,7 @@ async function seedRestaurants() {
 		console.log('🌿 Connected to MongoDB Atlas');
 
 		// Clear old restaurants
-		await Restaurant.deleteMany({});
+		await User.deleteMany({ role: 'restaurant' });
 		console.log('🗑 Cleared previous restaurant documents');
 
 		const restaurantData = [
@@ -118,10 +117,10 @@ async function seedRestaurants() {
 				.toLowerCase()
 				.replace(/\s+/g, '')}@example.com`,
 			password: 'password123',
-			// role is automatically set to "restaurant"
+			role: 'restaurant',
 		}));
 
-		await Restaurant.insertMany(dataWithUserFields);
+		await User.insertMany(dataWithUserFields);
 		console.log('✅ Inserted 10 restaurant dummy records');
 
 		process.exit(0);
