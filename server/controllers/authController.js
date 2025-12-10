@@ -13,8 +13,25 @@ const generateToken = (id) => {
 };
 
 export const register = async (req, res) => {
-	try {
-		const { name, email, phone, password, role } = req.body;
+    try {
+        console.log('Registration payload:', req.body); // Add this to debug
+        
+        const {
+			name,
+			email,
+			phone,
+			password,
+			role: incomingRole,
+			location,
+			cuisineTypes,
+			openingHours,
+			menu,
+			vehicleType,
+			licenseNumber,
+			currentLocation,
+		} = req.body;
+
+		console.log('Location received:', location); // Add this to debug
 
 		if (!name || !email || !phone || !password) {
 			return res.status(400).json({
@@ -31,13 +48,35 @@ export const register = async (req, res) => {
 			});
 		}
 
-		const user = await User.create({
-			name,
-			email,
-			phone,
-			password,
-			role: role || 'customer',
-		});
+		const role = incomingRole || 'customer';
+		const userData = { name, email, phone, password, role };
+
+		// Role-specific assignments
+		if (role === 'restaurant') {
+			// Use the name field as restaurantName for restaurants
+			userData.restaurantName = name.trim();
+			if (location) userData.location = location;
+			if (Array.isArray(cuisineTypes))
+				userData.cuisineTypes = cuisineTypes;
+			if (openingHours) userData.openingHours = openingHours;
+			if (Array.isArray(menu)) userData.menu = menu;
+
+			// Defaults for restaurants
+			userData.rating = 0;
+			userData.totalRatings = 0;
+			userData.isOpen = true;
+		} else if (role === 'deliveryStaff') {
+			if (vehicleType) userData.vehicleType = vehicleType;
+			if (licenseNumber) userData.licenseNumber = licenseNumber;
+			if (currentLocation) userData.currentLocation = currentLocation;
+
+			// Defaults for delivery staff
+			userData.isAvailable = true;
+			userData.totalDeliveries = 0;
+		}
+		// Customer role: only base fields, no additional fields needed
+
+		const user = await User.create(userData);
 
 		const token = generateToken(user._id);
 

@@ -7,6 +7,20 @@ export default function RestaurantDashboard() {
 	const [user, setUser] = useState(null);
 	const [restaurant, setRestaurant] = useState(null);
 	const [loading, setLoading] = useState(true);
+	const [showSettingsModal, setShowSettingsModal] = useState(false);
+	const [settingsForm, setSettingsForm] = useState({
+		restaurantName: '',
+		phone: '',
+		locationHouse: '',
+		locationRoad: '',
+		locationArea: '',
+		locationCity: '',
+		cuisineTypes: '',
+	});
+	const [savingSettings, setSavingSettings] = useState(false);
+	const [settingsError, setSettingsError] = useState('');
+	const [settingsSuccess, setSettingsSuccess] = useState('');
+	const [togglingStatus, setTogglingStatus] = useState(false);
 
 	useEffect(() => {
 		const userData = localStorage.getItem('user');
@@ -24,32 +38,35 @@ export default function RestaurantDashboard() {
 				}
 				setUser(parsedUser);
 
-				// Fetch full restaurant data - get all restaurants and find this one
-				// In the future, you can add a GET /api/restaurants/:id endpoint
+				// Fetch full restaurant data
 				const response = await axiosInstance.get('/api/restaurants');
 				const foundRestaurant = response.data.find(
-					(r) => r._id === parsedUser.id || r.email === parsedUser.email
+					(r) =>
+						r._id === parsedUser.id || r.email === parsedUser.email
 				);
 				if (foundRestaurant) {
 					setRestaurant(foundRestaurant);
+					initializeSettingsForm(foundRestaurant);
 				} else {
-					// Use user data as fallback
-					setRestaurant({
+					const fallbackRestaurant = {
 						restaurantName: parsedUser.name,
 						email: parsedUser.email,
 						phone: parsedUser.phone,
-					});
+					};
+					setRestaurant(fallbackRestaurant);
+					initializeSettingsForm(fallbackRestaurant);
 				}
 			} catch (err) {
 				console.error('Error fetching restaurant data:', err);
-				// Still show user data even if restaurant fetch fails
 				const parsedUser = JSON.parse(userData);
 				setUser(parsedUser);
-				setRestaurant({
+				const fallbackRestaurant = {
 					restaurantName: parsedUser.name,
 					email: parsedUser.email,
 					phone: parsedUser.phone,
-				});
+				};
+				setRestaurant(fallbackRestaurant);
+				initializeSettingsForm(fallbackRestaurant);
 			} finally {
 				setLoading(false);
 			}
@@ -58,11 +75,127 @@ export default function RestaurantDashboard() {
 		fetchRestaurantData();
 	}, [navigate]);
 
+	const initializeSettingsForm = (restaurantData) => {
+		setSettingsForm({
+			restaurantName: restaurantData?.restaurantName || restaurantData?.name || '',
+			phone: restaurantData?.phone || '',
+			locationHouse: restaurantData?.location?.house || '',
+			locationRoad: restaurantData?.location?.road || '',
+			locationArea: restaurantData?.location?.area || '',
+			locationCity: restaurantData?.location?.city || '',
+			cuisineTypes: Array.isArray(restaurantData?.cuisineTypes)
+				? restaurantData.cuisineTypes.join(', ')
+				: '',
+		});
+	};
+
 	const handleLogout = () => {
 		localStorage.removeItem('token');
 		localStorage.removeItem('user');
 		window.dispatchEvent(new Event('userLogout'));
 		navigate('/');
+	};
+
+	const handleSettingsChange = (e) => {
+		const { name, value } = e.target;
+		setSettingsForm({
+			...settingsForm,
+			[name]: value,
+		});
+	};
+
+	const handleSaveSettings = async () => {
+		setSettingsError('');
+		setSettingsSuccess('');
+		setSavingSettings(true);
+
+		try {
+			const cuisineTypesArray = settingsForm.cuisineTypes
+				.split(',')
+				.map((c) => c.trim())
+				.filter((c) => c);
+
+			const payload = {
+				restaurantName: settingsForm.restaurantName,
+				phone: settingsForm.phone,
+				location: {
+					house: settingsForm.locationHouse,
+					road: settingsForm.locationRoad,
+					area: settingsForm.locationArea,
+					city: settingsForm.locationCity,
+				},
+				cuisineTypes: cuisineTypesArray,
+			};
+
+			const response = await axiosInstance.put(
+				`/api/auth/update-restaurant`,
+				payload
+			);
+
+			if (response.data.success || response.status === 200) {
+				const updatedUser = {
+					...user,
+					name: settingsForm.restaurantName,
+					phone: settingsForm.phone,
+				};
+				localStorage.setItem('user', JSON.stringify(updatedUser));
+				setUser(updatedUser);
+
+				setRestaurant({
+					...restaurant,
+					restaurantName: settingsForm.restaurantName,
+					name: settingsForm.restaurantName,
+					phone: settingsForm.phone,
+					location: {
+						house: settingsForm.locationHouse,
+						road: settingsForm.locationRoad,
+						area: settingsForm.locationArea,
+						city: settingsForm.locationCity,
+					},
+					cuisineTypes: cuisineTypesArray,
+				});
+
+				setSettingsSuccess('Settings updated successfully!');
+				setTimeout(() => {
+					setShowSettingsModal(false);
+					setSettingsSuccess('');
+				}, 1500);
+			}
+		} catch (err) {
+			setSettingsError(
+				err.response?.data?.message ||
+					err.message ||
+					'Failed to update settings'
+			);
+		} finally {
+			setSavingSettings(false);
+		}
+	};
+
+	const handleToggleStatus = async () => {
+		setTogglingStatus(true);
+		try {
+			const newStatus = !restaurant?.isOpen;
+			const response = await axiosInstance.put(
+				`/api/auth/update-restaurant-status`,
+				{ isOpen: newStatus }
+			);
+
+			if (response.data.success) {
+				setRestaurant({
+					...restaurant,
+					isOpen: newStatus,
+				});
+			}
+		} catch (err) {
+			console.error('Error toggling status:', err);
+			setSettingsError(
+				err.response?.data?.message ||
+					'Failed to update restaurant status'
+			);
+		} finally {
+			setTogglingStatus(false);
+		}
 	};
 
 	if (loading) {
@@ -84,9 +217,11 @@ export default function RestaurantDashboard() {
 					<div className="flex justify-between items-center">
 						<div>
 							<h1 className="text-3xl font-bold text-gray-900 mb-2">
-								{restaurant?.restaurantName || user?.name} 🍽️
+								{restaurant?.restaurantName || user?.name}
 							</h1>
-							<p className="text-gray-600">Restaurant Dashboard</p>
+							<p className="text-gray-600 italic">
+								Restaurant Dashboard
+							</p>
 						</div>
 						<button
 							onClick={handleLogout}
@@ -112,17 +247,38 @@ export default function RestaurantDashboard() {
 						<div className="text-2xl font-bold text-gray-900">
 							{restaurant?.totalRatings || 0}
 						</div>
-						<div className="text-sm text-gray-600">Total Reviews</div>
+						<div className="text-sm text-gray-600">
+							Total Reviews
+						</div>
 					</div>
 
 					<div className="bg-white rounded-xl shadow-md p-6">
-						<div className="text-3xl mb-2">
-							{restaurant?.isOpen ? '🟢' : '🔴'}
+						<div className="flex items-center justify-between">
+							<div>
+								<div className="text-3xl mb-2">
+									{restaurant?.isOpen ? '🟢' : '🔴'}
+								</div>
+								<div className="text-2xl font-bold text-gray-900">
+									{restaurant?.isOpen ? 'Open' : 'Closed'}
+								</div>
+								<div className="text-sm text-gray-600">Status</div>
+							</div>
+							<button
+								onClick={handleToggleStatus}
+								disabled={togglingStatus}
+								className={`px-4 py-2 rounded-lg font-semibold text-white transition-all whitespace-nowrap ml-2 ${
+									restaurant?.isOpen
+										? 'bg-red-500 hover:bg-red-600'
+										: 'bg-green-500 hover:bg-green-600'
+								} disabled:opacity-50 disabled:cursor-not-allowed`}
+							>
+								{togglingStatus
+									? 'Updating...'
+									: restaurant?.isOpen
+									? 'Close'
+									: 'Open'}
+							</button>
 						</div>
-						<div className="text-2xl font-bold text-gray-900">
-							{restaurant?.isOpen ? 'Open' : 'Closed'}
-						</div>
-						<div className="text-sm text-gray-600">Status</div>
 					</div>
 
 					<div className="bg-white rounded-xl shadow-md p-6">
@@ -136,29 +292,38 @@ export default function RestaurantDashboard() {
 
 				{/* Quick Actions */}
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-					<div className="bg-white rounded-xl shadow-md p-6">
+					<button
+						onClick={() => navigate('/restaurant/manage-menu')}
+						className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition cursor-pointer text-left"
+					>
 						<div className="text-4xl mb-3">📝</div>
 						<h3 className="text-xl font-bold text-gray-900 mb-2">
 							Manage Menu
 						</h3>
 						<p className="text-gray-600">Add or edit menu items</p>
-					</div>
+					</button>
 
-					<div className="bg-white rounded-xl shadow-md p-6">
+					<button
+						onClick={() => navigate('/restaurant/orders')}
+						className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition cursor-pointer text-left"
+					>
 						<div className="text-4xl mb-3">📦</div>
 						<h3 className="text-xl font-bold text-gray-900 mb-2">
 							Orders
 						</h3>
 						<p className="text-gray-600">View and manage orders</p>
-					</div>
+					</button>
 
-					<div className="bg-white rounded-xl shadow-md p-6">
+					<button
+						onClick={() => setShowSettingsModal(true)}
+						className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition cursor-pointer text-left"
+					>
 						<div className="text-4xl mb-3">⚙️</div>
 						<h3 className="text-xl font-bold text-gray-900 mb-2">
 							Settings
 						</h3>
 						<p className="text-gray-600">Update restaurant info</p>
-					</div>
+					</button>
 				</div>
 
 				{/* Restaurant Info */}
@@ -168,35 +333,209 @@ export default function RestaurantDashboard() {
 					</h2>
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 						<div>
-							<span className="text-gray-600">Restaurant Name:</span>
+							<span className="text-gray-600">
+								Restaurant Name:
+							</span>
 							<span className="ml-2 font-semibold">
-								{restaurant?.restaurantName || 'Not set'}
+								{restaurant?.restaurantName || restaurant?.name || 'Not set'}
 							</span>
 						</div>
 						<div>
 							<span className="text-gray-600">Email:</span>
-							<span className="ml-2 font-semibold">{user?.email}</span>
+							<span className="ml-2 font-semibold">
+								{user?.email}
+							</span>
 						</div>
 						<div>
 							<span className="text-gray-600">Phone:</span>
-							<span className="ml-2 font-semibold">{user?.phone}</span>
-						</div>
-						<div>
-							<span className="text-gray-600">Location:</span>
 							<span className="ml-2 font-semibold">
-								{restaurant?.location?.city || 'Not set'}
+								{user?.phone}
 							</span>
 						</div>
 						<div>
 							<span className="text-gray-600">Cuisine Types:</span>
 							<span className="ml-2 font-semibold">
-								{restaurant?.cuisineTypes?.join(', ') || 'Not set'}
+								{restaurant?.cuisineTypes?.join(', ') ||
+									'Not set'}
 							</span>
+						</div>
+						<div className="md:col-span-2">
+							<span className="text-gray-600">Address:</span>
+							<div className="ml-2 font-semibold text-gray-800">
+								{restaurant?.location?.house && (
+									<div>
+										House: {restaurant.location.house}
+										{restaurant?.location?.road && (
+											<span>, {restaurant.location.road}</span>
+										)}
+									</div>
+								)}
+								{restaurant?.location?.area && (
+									<div>Area: {restaurant.location.area}</div>
+								)}
+								{restaurant?.location?.city && (
+									<div>City: {restaurant.location.city}</div>
+								)}
+								{!restaurant?.location?.city &&
+									!restaurant?.location?.area && (
+										<div>Not set</div>
+									)}
+							</div>
 						</div>
 					</div>
 				</div>
 			</div>
+
+			{/* Settings Modal */}
+			{showSettingsModal && (
+				<div className="fixed inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50 pt-24">
+					<div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+						<h2 className="text-2xl font-bold text-gray-900 mb-6">
+							Restaurant Settings
+						</h2>
+
+						{settingsError && (
+							<div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+								{settingsError}
+							</div>
+						)}
+
+						{settingsSuccess && (
+							<div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
+								{settingsSuccess}
+							</div>
+						)}
+
+						<div className="space-y-4">
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-1">
+									Restaurant Name
+								</label>
+								<input
+									type="text"
+									name="restaurantName"
+									value={settingsForm.restaurantName}
+									onChange={handleSettingsChange}
+									className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none"
+									placeholder="Restaurant Name"
+								/>
+							</div>
+
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-1">
+									Phone
+								</label>
+								<input
+									type="tel"
+									name="phone"
+									value={settingsForm.phone}
+									onChange={handleSettingsChange}
+									className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none"
+									placeholder="Phone Number"
+								/>
+							</div>
+
+							<div className="border-t-2 border-gray-200 pt-4 mt-4">
+								<h3 className="text-sm font-semibold text-gray-900 mb-3">
+									📍 Location Details
+								</h3>
+
+								<div>
+									<label className="block text-sm font-medium text-gray-700 mb-1">
+										House Number <span className="text-red-500">*</span>
+									</label>
+									<input
+										type="text"
+										name="locationHouse"
+										value={settingsForm.locationHouse}
+										onChange={handleSettingsChange}
+										className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none"
+										placeholder="House #123"
+										required
+									/>
+								</div>
+
+								<div className="mt-3">
+									<label className="block text-sm font-medium text-gray-700 mb-1">
+										Road / Street{' '}
+										<span className="text-gray-400">(Optional)</span>
+									</label>
+									<input
+										type="text"
+										name="locationRoad"
+										value={settingsForm.locationRoad}
+										onChange={handleSettingsChange}
+										className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none"
+										placeholder="Main Street"
+									/>
+								</div>
+
+								<div className="mt-3">
+									<label className="block text-sm font-medium text-gray-700 mb-1">
+										Area / District{' '}
+										<span className="text-red-500">*</span>
+									</label>
+									<input
+										type="text"
+										name="locationArea"
+										value={settingsForm.locationArea}
+										onChange={handleSettingsChange}
+										className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none"
+										placeholder="Downtown"
+										required
+									/>
+								</div>
+
+								<div className="mt-3">
+									<label className="block text-sm font-medium text-gray-700 mb-1">
+										City <span className="text-red-500">*</span>
+									</label>
+									<input
+										type="text"
+										name="locationCity"
+										value={settingsForm.locationCity}
+										onChange={handleSettingsChange}
+										className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none"
+										placeholder="City"
+										required
+									/>
+								</div>
+							</div>
+
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-1">
+									Cuisine Types (comma separated)
+								</label>
+								<input
+									type="text"
+									name="cuisineTypes"
+									value={settingsForm.cuisineTypes}
+									onChange={handleSettingsChange}
+									className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none"
+									placeholder="e.g., Italian, Pizza, Pasta"
+								/>
+							</div>
+						</div>
+
+						<div className="flex gap-3 mt-6">
+							<button
+								onClick={() => setShowSettingsModal(false)}
+								className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-semibold"
+								disabled={savingSettings}
+							>
+								Cancel
+							</button>
+							<button
+								onClick={handleSaveSettings}
+								disabled={savingSettings}
+								className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+							>
+								{savingSettings ? 'Saving...' : 'Save Changes'}
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
-

@@ -11,6 +11,12 @@ export default function Register() {
 		phone: '',
 		password: '',
 		confirmPassword: '',
+		vehicleType: '',
+		// Restaurant location fields
+		locationHouse: '',
+		locationRoad: '',
+		locationArea: '',
+		locationCity: '',
 	});
 	const [error, setError] = useState('');
 	const [loading, setLoading] = useState(false);
@@ -73,16 +79,33 @@ export default function Register() {
 		}
 
 		try {
-			const response = await axiosInstance.post('/api/auth/register', {
+			const payload = {
 				name: formData.name,
 				email: formData.email,
 				phone: formData.phone,
 				password: formData.password,
 				role: formData.role,
-			});
+			};
+
+			// Add vehicle type for delivery staff
+			if (formData.role === 'deliveryStaff') {
+				payload.vehicleType = formData.vehicleType;
+			}
+
+			// Add location for restaurant
+			if (formData.role === 'restaurant') {
+				payload.location = {
+					house: formData.locationHouse,
+					road: formData.locationRoad,
+					area: formData.locationArea,
+					city: formData.locationCity,
+				};
+			}
+
+			const response = await axiosInstance.post('/api/auth/register', payload);
 
 			if (response.data.success) {
-				// Store token in localStorage
+				// Store token and user in localStorage
 				localStorage.setItem('token', response.data.data.token);
 				localStorage.setItem(
 					'user',
@@ -196,13 +219,15 @@ export default function Register() {
 							)}
 						</div>
 
-						{/* Full Name */}
+						{/* Full Name / Restaurant Name */}
 						<div>
 							<label
 								htmlFor="name"
 								className="block text-sm font-medium text-gray-700 mb-2"
 							>
-								Full Name
+								{formData.role === 'restaurant'
+									? 'Restaurant Name'
+									: 'Full Name'}
 							</label>
 							<input
 								type="text"
@@ -212,7 +237,11 @@ export default function Register() {
 								onChange={handleChange}
 								required
 								className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-green-400 focus:outline-none transition-all"
-								placeholder="John Doe"
+								placeholder={
+									formData.role === 'restaurant'
+										? 'Restaurant Name'
+										: 'John Doe'
+								}
 							/>
 						</div>
 
@@ -295,6 +324,89 @@ export default function Register() {
 								placeholder="••••••••"
 							/>
 						</div>
+
+						{/* Restaurant Location Fields */}
+						{formData.role === 'restaurant' && (
+							<div className="space-y-4 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+								<h3 className="font-semibold text-gray-900">
+									Restaurant Location
+								</h3>
+
+								<div>
+									<label
+										htmlFor="locationHouse"
+										className="block text-sm font-medium text-gray-700 mb-2"
+									>
+										House Number
+									</label>
+									<input
+										type="text"
+										id="locationHouse"
+										name="locationHouse"
+										value={formData.locationHouse}
+										onChange={handleChange}
+										className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none transition-all"
+										placeholder="House #123"
+									/>
+								</div>
+
+								<div>
+									<label
+										htmlFor="locationRoad"
+										className="block text-sm font-medium text-gray-700 mb-2"
+									>
+										Road / Street (Optional)
+									</label>
+									<input
+										type="text"
+										id="locationRoad"
+										name="locationRoad"
+										value={formData.locationRoad}
+										onChange={handleChange}
+										className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none transition-all"
+										placeholder="Main Street"
+									/>
+								</div>
+
+								<div>
+									<label
+										htmlFor="locationArea"
+										className="block text-sm font-medium text-gray-700 mb-2"
+									>
+										Area / District
+									</label>
+									<input
+										type="text"
+										id="locationArea"
+										name="locationArea"
+										value={formData.locationArea}
+										onChange={handleChange}
+										required
+										className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none transition-all"
+										placeholder="Downtown"
+									/>
+								</div>
+
+								<div>
+									<label
+										htmlFor="locationCity"
+										className="block text-sm font-medium text-gray-700 mb-2"
+									>
+										City
+									</label>
+									<input
+										type="text"
+										id="locationCity"
+										name="locationCity"
+										value={formData.locationCity}
+										onChange={handleChange}
+										required
+										className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none transition-all"
+										placeholder="New York"
+									/>
+								</div>
+							</div>
+						)}
 
 						<button
 							type="submit"
