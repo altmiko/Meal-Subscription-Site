@@ -42,7 +42,7 @@ export default function Restaurants() {
 	// Filter restaurants based on search and cuisine
 	const filteredRestaurants = restaurants.filter((restaurant) => {
 		const matchesSearch =
-			restaurant.restaurantName
+			restaurant.name
 				?.toLowerCase()
 				.includes(searchTerm.toLowerCase()) ||
 			restaurant.location?.city
@@ -62,7 +62,7 @@ export default function Restaurants() {
 	// Format address
 	const formatAddress = (location) => {
 		if (!location) return 'Address not available';
-		const parts = [location.address, location.area, location.city].filter(
+		const parts = [location.house, location.road, location.area, location.city].filter(
 			Boolean
 		);
 		return parts.length > 0 ? parts.join(', ') : 'Address not available';
@@ -208,7 +208,7 @@ export default function Restaurants() {
 								{/* Restaurant Info */}
 								<div className="p-6">
 									<h2 className="text-2xl font-bold text-gray-900 mb-3 line-clamp-1">
-										{restaurant.restaurantName ||
+										{restaurant.restaurantName || restaurant.name ||
 											'Unnamed Restaurant'}
 									</h2>
 

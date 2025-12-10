@@ -9,7 +9,7 @@ export default function RestaurantDashboard() {
 	const [loading, setLoading] = useState(true);
 	const [showSettingsModal, setShowSettingsModal] = useState(false);
 	const [settingsForm, setSettingsForm] = useState({
-		restaurantName: '',
+		name: '',
 		phone: '',
 		locationHouse: '',
 		locationRoad: '',
@@ -77,7 +77,7 @@ export default function RestaurantDashboard() {
 
 	const initializeSettingsForm = (restaurantData) => {
 		setSettingsForm({
-			restaurantName: restaurantData?.restaurantName || restaurantData?.name || '',
+			name: restaurantData?.name || '',
 			phone: restaurantData?.phone || '',
 			locationHouse: restaurantData?.location?.house || '',
 			locationRoad: restaurantData?.location?.road || '',
@@ -116,7 +116,7 @@ export default function RestaurantDashboard() {
 				.filter((c) => c);
 
 			const payload = {
-				restaurantName: settingsForm.restaurantName,
+				name: settingsForm.name,
 				phone: settingsForm.phone,
 				location: {
 					house: settingsForm.locationHouse,
@@ -135,7 +135,7 @@ export default function RestaurantDashboard() {
 			if (response.data.success || response.status === 200) {
 				const updatedUser = {
 					...user,
-					name: settingsForm.restaurantName,
+					name: settingsForm.name,
 					phone: settingsForm.phone,
 				};
 				localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -143,8 +143,7 @@ export default function RestaurantDashboard() {
 
 				setRestaurant({
 					...restaurant,
-					restaurantName: settingsForm.restaurantName,
-					name: settingsForm.restaurantName,
+					name: settingsForm.name,
 					phone: settingsForm.phone,
 					location: {
 						house: settingsForm.locationHouse,
@@ -217,7 +216,7 @@ export default function RestaurantDashboard() {
 					<div className="flex justify-between items-center">
 						<div>
 							<h1 className="text-3xl font-bold text-gray-900 mb-2">
-								{restaurant?.restaurantName || user?.name}
+								{restaurant?.name || user?.name}
 							</h1>
 							<p className="text-gray-600 italic">
 								Restaurant Dashboard
@@ -337,7 +336,7 @@ export default function RestaurantDashboard() {
 								Restaurant Name:
 							</span>
 							<span className="ml-2 font-semibold">
-								{restaurant?.restaurantName || restaurant?.name || 'Not set'}
+								{restaurant?.name || 'Not set'}
 							</span>
 						</div>
 						<div>
@@ -413,8 +412,8 @@ export default function RestaurantDashboard() {
 								</label>
 								<input
 									type="text"
-									name="restaurantName"
-									value={settingsForm.restaurantName}
+									name="name"
+									value={settingsForm.name}
 									onChange={handleSettingsChange}
 									className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none"
 									placeholder="Restaurant Name"
