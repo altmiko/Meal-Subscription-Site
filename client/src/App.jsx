@@ -9,8 +9,6 @@ import CustomerDashboard from './pages/CustomerDashboard';
 import RestaurantDashboard from './pages/RestaurantDashboard';
 import DeliveryStaffDashboard from './pages/DeliveryStaffDashboard';
 import KitchenProfile from './pages/KitchenProfile';
-import RestaurantMenu from './pages/RestaurantMenu';
-import ManageMenu from './pages/ManageMenu';
 
 function App() {
 	return (
@@ -35,11 +33,6 @@ function App() {
 					<Route
 						path="/dashboard/delivery-staff"
 						element={<DeliveryStaffDashboard />}
-					/>
-					<Route path="/restaurant/:id" element={<RestaurantMenu />} />
-					<Route
-						path="/restaurant/:id/manage-menu"
-						element={<ManageMenu />}
 					/>
 				</Routes>
 			</div>
