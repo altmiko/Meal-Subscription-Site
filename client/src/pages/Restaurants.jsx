@@ -72,7 +72,7 @@ export default function Restaurants() {
 		return (
 			<div className="min-h-screen bg-gray-50 flex items-center justify-center pt-24">
 				<div className="text-center">
-					<div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+					<div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 border-t-transparent mx-auto mb-4"></div>
 					<p className="text-gray-600 text-lg">
 						Loading restaurants...
 					</p>
@@ -92,7 +92,7 @@ export default function Restaurants() {
 					<p className="text-red-600 mb-6">{error}</p>
 					<button
 						onClick={fetchRestaurants}
-						className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition font-semibold"
+						className="bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition font-semibold"
 					>
 						Try Again
 					</button>
@@ -102,11 +102,11 @@ export default function Restaurants() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50 pt-24">
+		<div className="min-h-screen bg-white pt-24">
 			<div className="max-w-7xl mx-auto px-4 py-8">
 				{/* Header */}
 				<div className="mb-8 text-center">
-					<h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-4 tracking-tighter">
+					<h1 className="text-5xl md:text-6xl font-semibold text-gray-900 mb-4 tracking-tight">
 						Restaurants
 					</h1>
 					<p className="text-xl text-gray-600 mb-6">
@@ -125,7 +125,7 @@ export default function Restaurants() {
 									onChange={(e) =>
 										setSearchTerm(e.target.value)
 									}
-									className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:outline-none transition"
+									className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-emerald-500 focus:outline-none transition"
 								/>
 							</div>
 
@@ -136,7 +136,7 @@ export default function Restaurants() {
 									onChange={(e) =>
 										setSelectedCuisine(e.target.value)
 									}
-									className="px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:outline-none transition bg-white"
+									className="px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-emerald-500 focus:outline-none transition bg-white"
 								>
 									<option value="">All Cuisines</option>
 									{allCuisines.map((cuisine) => (
@@ -151,7 +151,7 @@ export default function Restaurants() {
 
 					{/* Results Count */}
 					<p className="text-gray-700">
-						<span className="font-semibold text-blue-600">
+						<span className="font-semibold text-emerald-700">
 							{filteredRestaurants.length}
 						</span>{' '}
 						restaurant{filteredRestaurants.length !== 1 ? 's' : ''}{' '}
@@ -164,7 +164,7 @@ export default function Restaurants() {
 
 				{/* No Restaurants */}
 				{filteredRestaurants.length === 0 ? (
-					<div className="bg-white rounded-xl shadow-lg p-12 text-center max-w-2xl mx-auto">
+					<div className="bg-gray-50 rounded-xl border border-gray-100 shadow-sm p-12 text-center max-w-2xl mx-auto">
 						<div className="text-7xl mb-6">🍽️</div>
 						<h3 className="text-2xl font-bold text-gray-900 mb-3">
 							{restaurants.length === 0
@@ -182,7 +182,7 @@ export default function Restaurants() {
 									setSearchTerm('');
 									setSelectedCuisine('');
 								}}
-								className="text-blue-600 hover:text-blue-700 font-semibold underline"
+								className="font-semibold text-emerald-700 hover:text-emerald-800 underline"
 							>
 								Clear filters
 							</button>
@@ -194,20 +194,20 @@ export default function Restaurants() {
 						{filteredRestaurants.map((restaurant) => (
 							<div
 								key={restaurant._id}
-								className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer transform hover:-translate-y-1"
+								className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer transform hover:-translate-y-1"
 								onClick={() =>
 									navigate(`/restaurants/${restaurant._id}`)
 								}
 							>
 								{/* Restaurant Image Placeholder */}
-								<div className="h-48 bg-gradient-to-br from-blue-300 to-indigo-400 flex items-center justify-center relative overflow-hidden">
-									<span className="text-7xl z-10">🍽️</span>
-									<div className="absolute inset-0 bg-black opacity-0 hover:opacity-10 transition-opacity"></div>
+								<div className="h-48 bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center relative overflow-hidden">
+									<span className="text-6xl z-10 text-emerald-800">🍽️</span>
+									<div className="absolute inset-0 bg-emerald-900/5 opacity-0 hover:opacity-100 transition-opacity"></div>
 								</div>
 
 								{/* Restaurant Info */}
 								<div className="p-6">
-									<h2 className="text-2xl font-bold text-gray-900 mb-3 line-clamp-1 tracking-tighter">
+									<h2 className="text-2xl font-semibold text-gray-900 mb-3 line-clamp-1 tracking-tight">
 										{restaurant.restaurantName || restaurant.name ||
 											'Unnamed Restaurant'}
 									</h2>
@@ -240,7 +240,7 @@ export default function Restaurants() {
 															(cuisine, idx) => (
 																<span
 																	key={idx}
-																	className="inline-block bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-1 rounded-full"
+																	className="inline-block bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-1 rounded-full"
 																>
 																	{cuisine}
 																</span>
@@ -258,7 +258,7 @@ export default function Restaurants() {
 												`/restaurants/${restaurant._id}`
 											);
 										}}
-										className="w-full bg-gradient-to-r from-blue-400 to-indigo-500 text-white py-3 rounded-lg hover:from-blue-500 hover:to-indigo-600 transition font-semibold shadow-md hover:shadow-lg"
+										className="w-full rounded-lg bg-emerald-600 py-3 font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg"
 									>
 										View Menu
 									</button>

@@ -67,15 +67,18 @@ export default function Login() {
 	};
 
 	return (
-		<div className="min-h-screen pt-24 px-4 pb-12">
-			<div className="max-w-md mx-auto">
-				<div className="bg-white rounded-xl shadow-lg p-8">
+		<div className="min-h-screen bg-gray-50 px-4 pb-16 pt-28">
+			<div className="mx-auto max-w-md">
+				<div className="rounded-2xl bg-white p-10 shadow-lg ring-1 ring-gray-100">
 					{/* Header */}
 					<div className="text-center mb-8">
-						<h1 className="text-3xl font-bold text-gray-800 mb-2">
-							Login
+						<p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
+							Welcome back
+						</p>
+						<h1 className="mt-3 text-3xl font-semibold text-gray-900">
+							Sign in to continue
 						</h1>
-						<p className="text-gray-600">Welcome back to NomNom</p>
+						<p className="text-gray-600">Minimal steps to your next meal.</p>
 					</div>
 
 					{/* Error Message */}
@@ -101,7 +104,7 @@ export default function Login() {
 								value={formData.email}
 								onChange={handleChange}
 								required
-								className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-green-400 focus:outline-none transition-all"
+							className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
 								placeholder="your@email.com"
 							/>
 						</div>
@@ -120,7 +123,7 @@ export default function Login() {
 								value={formData.password}
 								onChange={handleChange}
 								required
-								className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-green-400 focus:outline-none transition-all"
+							className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
 								placeholder="••••••••"
 							/>
 						</div>
@@ -129,7 +132,7 @@ export default function Login() {
 							<label className="flex items-center">
 								<input
 									type="checkbox"
-									className="rounded border-gray-300 text-green-500 focus:ring-green-400"
+								className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
 								/>
 								<span className="ml-2 text-sm text-gray-600">
 									Remember me
@@ -137,7 +140,7 @@ export default function Login() {
 							</label>
 							<a
 								href="#"
-								className="text-sm text-green-500 hover:text-green-600 cursor-pointer"
+								className="text-sm text-emerald-700 hover:text-emerald-800 cursor-pointer"
 							>
 								Forgot password?
 							</a>
@@ -146,7 +149,7 @@ export default function Login() {
 						<button
 							type="submit"
 							disabled={loading}
-							className="w-full bg-gradient-to-r from-green-300 to-emerald-400 text-white py-3 rounded-full font-semibold hover:from-green-400 hover:to-emerald-500 transition-all shadow-md hover:shadow-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+							className="w-full rounded-lg bg-emerald-600 py-3 font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{loading ? 'Logging in...' : 'Login'}
 						</button>
@@ -158,7 +161,7 @@ export default function Login() {
 							Don't have an account?{' '}
 							<Link
 								to="/register"
-								className="text-green-500 font-semibold hover:text-green-600 cursor-pointer"
+								className="font-semibold text-emerald-700 hover:text-emerald-800 cursor-pointer"
 							>
 								Sign up
 							</Link>

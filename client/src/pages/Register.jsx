@@ -25,22 +25,22 @@ export default function Register() {
 			id: 'customer',
 			title: 'Customer',
 			icon: '🛍️',
-			description: 'Order food from your favorite restaurants',
-			color: 'from-blue-400 to-blue-600',
+			description: 'Order food from curated kitchens',
+			color: 'from-emerald-500 to-emerald-600',
 		},
 		{
 			id: 'deliveryStaff',
 			title: 'Delivery Staff',
 			icon: '🏍️',
-			description: 'Deliver orders and earn money',
-			color: 'from-green-400 to-green-600',
+			description: 'Deliver on-time orders and earn',
+			color: 'from-emerald-500 to-emerald-600',
 		},
 		{
 			id: 'restaurant',
 			title: 'Restaurant',
 			icon: '🍽️',
-			description: 'Manage your restaurant and menu',
-			color: 'from-orange-400 to-orange-600',
+			description: 'Manage your kitchen and menu',
+			color: 'from-emerald-500 to-emerald-600',
 		},
 	];
 
@@ -141,15 +141,18 @@ export default function Register() {
 	};
 
 	return (
-		<div className="min-h-screen pt-24 px-4 pb-12">
-			<div className="max-w-md mx-auto">
-				<div className="bg-white rounded-xl shadow-lg p-8">
+		<div className="min-h-screen bg-gray-50 px-4 pb-16 pt-28">
+			<div className="mx-auto max-w-lg">
+				<div className="rounded-2xl bg-white p-10 shadow-lg ring-1 ring-gray-100">
 					{/* Header */}
 					<div className="text-center mb-8">
-						<h1 className="text-3xl font-bold text-gray-800 mb-2">
-							Create Account
+						<p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
+							Start your plan
+						</p>
+						<h1 className="mt-3 text-3xl font-semibold text-gray-900">
+							Create an account
 						</h1>
-						<p className="text-gray-600">Join NomNom today</p>
+						<p className="text-gray-600">Choose your role and get cooking.</p>
 					</div>
 
 					{/* Error Message */}
@@ -182,13 +185,13 @@ export default function Register() {
 												setError('');
 											}}
 											className={`
-												p-4 rounded-lg border-2 transition-all
+												p-4 rounded-xl border-2 transition-all
 												text-left flex flex-col items-center justify-center
-												hover:shadow-lg transform hover:-translate-y-1
+												hover:shadow-md hover:-translate-y-0.5
 												${
 													isSelected
 														? `bg-gradient-to-br ${role.color} text-white border-transparent shadow-md`
-														: 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
+														: 'bg-gray-50 border-gray-200 text-gray-800 hover:border-emerald-200'
 												}
 											`}
 										>
@@ -236,7 +239,7 @@ export default function Register() {
 								value={formData.name}
 								onChange={handleChange}
 								required
-								className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-green-400 focus:outline-none transition-all"
+								className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
 								placeholder={
 									formData.role === 'restaurant'
 										? 'Restaurant Name'
@@ -259,7 +262,7 @@ export default function Register() {
 								value={formData.email}
 								onChange={handleChange}
 								required
-								className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-green-400 focus:outline-none transition-all"
+								className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
 								placeholder="your@email.com"
 							/>
 						</div>
@@ -278,7 +281,7 @@ export default function Register() {
 								value={formData.phone}
 								onChange={handleChange}
 								required
-								className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-green-400 focus:outline-none transition-all"
+								className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
 								placeholder="01234567890"
 							/>
 						</div>
@@ -298,7 +301,7 @@ export default function Register() {
 								onChange={handleChange}
 								required
 								minLength={6}
-								className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-green-400 focus:outline-none transition-all"
+								className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
 								placeholder="••••••••"
 							/>
 							<p className="mt-1 text-xs text-gray-500">
@@ -327,7 +330,7 @@ export default function Register() {
 
 						{/* Restaurant Location Fields */}
 						{formData.role === 'restaurant' && (
-							<div className="space-y-4 p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+							<div className="space-y-4 rounded-xl border-2 border-emerald-100 bg-emerald-50 p-4">
 								<h3 className="font-semibold text-gray-900">
 									Restaurant Location
 								</h3>
@@ -345,7 +348,7 @@ export default function Register() {
 										name="locationHouse"
 										value={formData.locationHouse}
 										onChange={handleChange}
-										className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none transition-all"
+										className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
 										placeholder="House #123"
 									/>
 								</div>
@@ -363,7 +366,7 @@ export default function Register() {
 										name="locationRoad"
 										value={formData.locationRoad}
 										onChange={handleChange}
-										className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none transition-all"
+										className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
 										placeholder="Main Street"
 									/>
 								</div>
@@ -382,7 +385,7 @@ export default function Register() {
 										value={formData.locationArea}
 										onChange={handleChange}
 										required
-										className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none transition-all"
+										className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
 										placeholder="Downtown"
 									/>
 								</div>
@@ -401,7 +404,7 @@ export default function Register() {
 										value={formData.locationCity}
 										onChange={handleChange}
 										required
-										className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none transition-all"
+										className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
 										placeholder="New York"
 									/>
 								</div>
@@ -411,7 +414,7 @@ export default function Register() {
 						<button
 							type="submit"
 							disabled={loading}
-							className="w-full bg-gradient-to-r from-green-300 to-emerald-400 text-white py-3 rounded-full font-semibold hover:from-green-400 hover:to-emerald-500 transition-all shadow-md hover:shadow-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+							className="w-full rounded-lg bg-emerald-600 py-3 font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{loading ? 'Creating Account...' : 'Create Account'}
 						</button>
@@ -423,7 +426,7 @@ export default function Register() {
 							Already have an account?{' '}
 							<Link
 								to="/login"
-								className="text-green-500 font-semibold hover:text-green-600 cursor-pointer"
+								className="font-semibold text-emerald-700 hover:text-emerald-800 cursor-pointer"
 							>
 								Log in
 							</Link>

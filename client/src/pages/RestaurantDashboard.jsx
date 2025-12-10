@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Route } from 'react-router-dom';
 import axiosInstance from '../api/axios';
+import ManageMenu from '../pages/ManageMenu';
 
 export default function RestaurantDashboard() {
 	const navigate = useNavigate();
@@ -201,7 +202,7 @@ export default function RestaurantDashboard() {
 		return (
 			<div className="min-h-screen bg-gray-50 flex items-center justify-center pt-24">
 				<div className="text-center">
-					<div className="animate-spin rounded-full h-16 w-16 border-b-4 border-orange-500 border-t-transparent mx-auto mb-4"></div>
+					<div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 border-t-transparent mx-auto mb-4"></div>
 					<p className="text-gray-600 text-lg">Loading...</p>
 				</div>
 			</div>
@@ -209,22 +210,22 @@ export default function RestaurantDashboard() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50 pt-24">
-			<div className="max-w-7xl mx-auto px-4 py-8">
+		<div className="min-h-screen bg-white pt-24">
+			<div className="max-w-7xl mx-auto px-6 py-12">
 				{/* Header */}
-				<div className="bg-white rounded-xl shadow-md p-6 mb-6">
-					<div className="flex justify-between items-center">
+				<div className="bg-gray-100 rounded-lg shadow-md p-6 mb-8 border border-gray-200">
+					<div className="flex flex-wrap justify-between items-center gap-4">
 						<div>
-							<h1 className="text-3xl font-bold text-gray-900 mb-2">
+							<h1 className="text-3xl font-bold text-gray-900 mb-1 tracking-tight">
 								{restaurant?.name || user?.name}
 							</h1>
-							<p className="text-gray-600 italic">
+							<p className="text-gray-600">
 								Restaurant Dashboard
 							</p>
 						</div>
 						<button
 							onClick={handleLogout}
-							className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+							className="px-4 py-2 bg-emerald-600 text-white rounded transition duration-200 hover:bg-emerald-700 shadow-md"
 						>
 							Logout
 						</button>
@@ -232,18 +233,18 @@ export default function RestaurantDashboard() {
 				</div>
 
 				{/* Quick Stats */}
-				<div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-					<div className="bg-white rounded-xl shadow-md p-6">
-						<div className="text-3xl mb-2">⭐</div>
-						<div className="text-2xl font-bold text-gray-900">
+				<div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+					<div className="bg-gray-100 rounded-lg shadow-sm p-6 border border-gray-200">
+						<div className="text-3xl mb-2 text-emerald-600">⭐</div>
+						<div className="text-2xl font-bold text-gray-900 tracking-tight">
 							{restaurant?.rating?.toFixed(1) || '0.0'}
 						</div>
 						<div className="text-sm text-gray-600">Rating</div>
 					</div>
 
-					<div className="bg-white rounded-xl shadow-md p-6">
-						<div className="text-3xl mb-2">📊</div>
-						<div className="text-2xl font-bold text-gray-900">
+					<div className="bg-gray-100 rounded-lg shadow-sm p-6 border border-gray-200">
+						<div className="text-3xl mb-2 text-emerald-600">📊</div>
+						<div className="text-2xl font-bold text-gray-900 tracking-tight">
 							{restaurant?.totalRatings || 0}
 						</div>
 						<div className="text-sm text-gray-600">
@@ -251,24 +252,26 @@ export default function RestaurantDashboard() {
 						</div>
 					</div>
 
-					<div className="bg-white rounded-xl shadow-md p-6">
+					<div className="bg-gray-100 rounded-lg shadow-sm p-6 border border-gray-200">
 						<div className="flex items-center justify-between">
 							<div>
-								<div className="text-3xl mb-2">
+								<div className="text-3xl mb-2 text-emerald-600">
 									{restaurant?.isOpen ? '🟢' : '🔴'}
 								</div>
-								<div className="text-2xl font-bold text-gray-900">
+								<div className="text-2xl font-bold text-gray-900 tracking-tight">
 									{restaurant?.isOpen ? 'Open' : 'Closed'}
 								</div>
-								<div className="text-sm text-gray-600">Status</div>
+								<div className="text-sm text-gray-600">
+									Status
+								</div>
 							</div>
 							<button
 								onClick={handleToggleStatus}
 								disabled={togglingStatus}
-								className={`px-4 py-2 rounded-lg font-semibold text-white transition-all whitespace-nowrap ml-2 ${
+								className={`px-4 py-2 rounded font-semibold text-white transition-all whitespace-nowrap ml-2 shadow-md ${
 									restaurant?.isOpen
-										? 'bg-red-500 hover:bg-red-600'
-										: 'bg-green-500 hover:bg-green-600'
+										? 'bg-emerald-600 hover:bg-emerald-700'
+										: 'bg-emerald-600 hover:bg-emerald-700'
 								} disabled:opacity-50 disabled:cursor-not-allowed`}
 							>
 								{togglingStatus
@@ -280,9 +283,9 @@ export default function RestaurantDashboard() {
 						</div>
 					</div>
 
-					<div className="bg-white rounded-xl shadow-md p-6">
-						<div className="text-3xl mb-2">🍴</div>
-						<div className="text-2xl font-bold text-gray-900">
+					<div className="bg-gray-100 rounded-lg shadow-sm p-6 border border-gray-200">
+						<div className="text-3xl mb-2 text-emerald-600">🍴</div>
+						<div className="text-2xl font-bold text-gray-900 tracking-tight">
 							{restaurant?.menu?.length || 0}
 						</div>
 						<div className="text-sm text-gray-600">Menu Items</div>
@@ -290,13 +293,13 @@ export default function RestaurantDashboard() {
 				</div>
 
 				{/* Quick Actions */}
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
 					<button
 						onClick={() => navigate('/restaurant/manage-menu')}
-						className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition cursor-pointer text-left"
+						className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 hover:shadow-lg transition cursor-pointer text-left"
 					>
-						<div className="text-4xl mb-3">📝</div>
-						<h3 className="text-xl font-bold text-gray-900 mb-2">
+						<div className="text-4xl mb-3 text-emerald-600">📝</div>
+						<h3 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">
 							Manage Menu
 						</h3>
 						<p className="text-gray-600">Add or edit menu items</p>
@@ -304,10 +307,10 @@ export default function RestaurantDashboard() {
 
 					<button
 						onClick={() => navigate('/restaurant/orders')}
-						className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition cursor-pointer text-left"
+						className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 hover:shadow-lg transition cursor-pointer text-left"
 					>
-						<div className="text-4xl mb-3">📦</div>
-						<h3 className="text-xl font-bold text-gray-900 mb-2">
+						<div className="text-4xl mb-3 text-emerald-600">📦</div>
+						<h3 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">
 							Orders
 						</h3>
 						<p className="text-gray-600">View and manage orders</p>
@@ -315,10 +318,10 @@ export default function RestaurantDashboard() {
 
 					<button
 						onClick={() => setShowSettingsModal(true)}
-						className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition cursor-pointer text-left"
+						className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 hover:shadow-lg transition cursor-pointer text-left"
 					>
-						<div className="text-4xl mb-3">⚙️</div>
-						<h3 className="text-xl font-bold text-gray-900 mb-2">
+						<div className="text-4xl mb-3 text-emerald-600">⚙️</div>
+						<h3 className="text-xl font-bold text-gray-900 mb-2 tracking-tight">
 							Settings
 						</h3>
 						<p className="text-gray-600">Update restaurant info</p>
@@ -326,8 +329,8 @@ export default function RestaurantDashboard() {
 				</div>
 
 				{/* Restaurant Info */}
-				<div className="bg-white rounded-xl shadow-md p-6">
-					<h2 className="text-2xl font-bold text-gray-900 mb-4">
+				<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+					<h2 className="text-2xl font-bold text-gray-900 mb-6 tracking-tight">
 						Restaurant Information
 					</h2>
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -352,7 +355,9 @@ export default function RestaurantDashboard() {
 							</span>
 						</div>
 						<div>
-							<span className="text-gray-600">Cuisine Types:</span>
+							<span className="text-gray-600">
+								Cuisine Types:
+							</span>
 							<span className="ml-2 font-semibold">
 								{restaurant?.cuisineTypes?.join(', ') ||
 									'Not set'}
@@ -365,7 +370,9 @@ export default function RestaurantDashboard() {
 									<div>
 										House: {restaurant.location.house}
 										{restaurant?.location?.road && (
-											<span>, {restaurant.location.road}</span>
+											<span>
+												, {restaurant.location.road}
+											</span>
 										)}
 									</div>
 								)}
@@ -388,19 +395,19 @@ export default function RestaurantDashboard() {
 			{/* Settings Modal */}
 			{showSettingsModal && (
 				<div className="fixed inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50 pt-24">
-					<div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-						<h2 className="text-2xl font-bold text-gray-900 mb-6">
+					<div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto border border-gray-200">
+						<h2 className="text-2xl font-bold text-gray-900 mb-6 tracking-tight">
 							Restaurant Settings
 						</h2>
 
 						{settingsError && (
-							<div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+							<div className="mb-4 p-3 bg-gray-100 border border-gray-200 text-gray-900 rounded text-sm">
 								{settingsError}
 							</div>
 						)}
 
 						{settingsSuccess && (
-							<div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
+							<div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded text-sm">
 								{settingsSuccess}
 							</div>
 						)}
@@ -415,7 +422,7 @@ export default function RestaurantDashboard() {
 									name="name"
 									value={settingsForm.name}
 									onChange={handleSettingsChange}
-									className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none"
+									className="w-full px-4 py-2 rounded border-2 border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 									placeholder="Restaurant Name"
 								/>
 							</div>
@@ -429,7 +436,7 @@ export default function RestaurantDashboard() {
 									name="phone"
 									value={settingsForm.phone}
 									onChange={handleSettingsChange}
-									className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none"
+									className="w-full px-4 py-2 rounded border-2 border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 									placeholder="Phone Number"
 								/>
 							</div>
@@ -441,14 +448,17 @@ export default function RestaurantDashboard() {
 
 								<div>
 									<label className="block text-sm font-medium text-gray-700 mb-1">
-										House Number <span className="text-red-500">*</span>
+										House Number{' '}
+										<span className="text-emerald-600">
+											*
+										</span>
 									</label>
 									<input
 										type="text"
 										name="locationHouse"
 										value={settingsForm.locationHouse}
 										onChange={handleSettingsChange}
-										className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none"
+										className="w-full px-4 py-2 rounded border-2 border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 										placeholder="House #123"
 										required
 									/>
@@ -457,14 +467,16 @@ export default function RestaurantDashboard() {
 								<div className="mt-3">
 									<label className="block text-sm font-medium text-gray-700 mb-1">
 										Road / Street{' '}
-										<span className="text-gray-400">(Optional)</span>
+										<span className="text-gray-400">
+											(Optional)
+										</span>
 									</label>
 									<input
 										type="text"
 										name="locationRoad"
 										value={settingsForm.locationRoad}
 										onChange={handleSettingsChange}
-										className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none"
+										className="w-full px-4 py-2 rounded border-2 border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 										placeholder="Main Street"
 									/>
 								</div>
@@ -472,14 +484,16 @@ export default function RestaurantDashboard() {
 								<div className="mt-3">
 									<label className="block text-sm font-medium text-gray-700 mb-1">
 										Area / District{' '}
-										<span className="text-red-500">*</span>
+										<span className="text-emerald-600">
+											*
+										</span>
 									</label>
 									<input
 										type="text"
 										name="locationArea"
 										value={settingsForm.locationArea}
 										onChange={handleSettingsChange}
-										className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none"
+										className="w-full px-4 py-2 rounded border-2 border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 										placeholder="Downtown"
 										required
 									/>
@@ -487,14 +501,17 @@ export default function RestaurantDashboard() {
 
 								<div className="mt-3">
 									<label className="block text-sm font-medium text-gray-700 mb-1">
-										City <span className="text-red-500">*</span>
+										City{' '}
+										<span className="text-emerald-600">
+											*
+										</span>
 									</label>
 									<input
 										type="text"
 										name="locationCity"
 										value={settingsForm.locationCity}
 										onChange={handleSettingsChange}
-										className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none"
+										className="w-full px-4 py-2 rounded border-2 border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 										placeholder="City"
 										required
 									/>
@@ -510,7 +527,7 @@ export default function RestaurantDashboard() {
 									name="cuisineTypes"
 									value={settingsForm.cuisineTypes}
 									onChange={handleSettingsChange}
-									className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-orange-400 focus:outline-none"
+									className="w-full px-4 py-2 rounded border-2 border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
 									placeholder="e.g., Italian, Pizza, Pasta"
 								/>
 							</div>
@@ -519,7 +536,7 @@ export default function RestaurantDashboard() {
 						<div className="flex gap-3 mt-6">
 							<button
 								onClick={() => setShowSettingsModal(false)}
-								className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-semibold"
+								className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition font-semibold"
 								disabled={savingSettings}
 							>
 								Cancel
@@ -527,7 +544,7 @@ export default function RestaurantDashboard() {
 							<button
 								onClick={handleSaveSettings}
 								disabled={savingSettings}
-								className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+								className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition font-semibold shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
 							>
 								{savingSettings ? 'Saving...' : 'Save Changes'}
 							</button>
@@ -538,3 +555,5 @@ export default function RestaurantDashboard() {
 		</div>
 	);
 }
+
+<Route path="/restaurant/manage-menu" element={<ManageMenu />} />;

@@ -1,28 +1,24 @@
 export default function Logo({ size = 32 }) {
-    return (
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 100 100"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style={{ stopColor: '#93c5fd', stopOpacity: 1 }} />
-            <stop
-              offset="100%"
-              style={{ stopColor: '#a5b4fc', stopOpacity: 1 }}
-            />
-          </linearGradient>
-        </defs>
-        <path
-          d="M50 5C25.16 5 5 25.16 5 50s20.16 45 45 45 45-20.16 45-45S74.84 5 50 5zm0 82.5C29.33 87.5 12.5 70.67 12.5 50S29.33 12.5 50 12.5 87.5 29.33 87.5 50 70.67 87.5 50 87.5z"
-          fill="url(#logoGradient)"
-        />
-        <path
-          d="M50 27.5c-12.4 0-22.5 10.1-22.5 22.5S37.6 72.5 50 72.5s22.5-10.1 22.5-22.5-10.1-22.5-22.5-22.5zm0 37.5c-8.27 0-15-6.73-15-15s6.73-15 15-15 15 6.73 15 15-6.73 15-15 15z"
-          fill="white"
-        />
-      </svg>
-    );
-  }
+	return (
+		<svg
+			width={size}
+			height={size}
+			viewBox="0 0 120 120"
+			xmlns="http://www.w3.org/2000/svg"
+			role="img"
+			aria-label="NomNom"
+		>
+			<circle cx="60" cy="60" r="56" fill="#059669" opacity="0.12" />
+			<circle cx="60" cy="60" r="42" fill="#10b981" />
+			<path
+				d="M44 76c0-10 7.5-18 16.7-18 4.6 0 8.8 2.2 11.3 5.7 2.1 3 5.4 4.3 8 4.3 4.7 0 8-3.6 8-8.6 0-10.2-10-18.4-23-18.4-15 0-27 11.4-27 25.6C38 72.6 40.5 76 44 76z"
+				fill="#ecfdf3"
+			/>
+			<path
+				d="M50 66.5c0-5.9 4.8-10.7 10.7-10.7 2.9 0 5.6 1.2 7.5 3.1 1.4 1.5 3.3 2.3 5.3 2.3 4 0 7.2-3.3 7.2-7.3 0-7.2-7.3-13.1-16.3-13.1-10.8 0-19.6 8-19.6 17.8 0 3.9 1.1 7.7 3.2 8.7 1 .5 2-.1 1.9-0.8L50 66.5z"
+				fill="#ffffff"
+				opacity="0.9"
+			/>
+		</svg>
+	);
+}

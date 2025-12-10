@@ -40,7 +40,7 @@ export default function CustomerDashboard() {
 		return (
 			<div className="min-h-screen bg-gray-50 flex items-center justify-center pt-24">
 				<div className="text-center">
-					<div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+					<div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 border-t-transparent mx-auto mb-4"></div>
 					<p className="text-gray-600 text-lg">Loading...</p>
 				</div>
 			</div>
@@ -48,20 +48,20 @@ export default function CustomerDashboard() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50 pt-24">
+		<div className="min-h-screen bg-white pt-24">
 			<div className="max-w-7xl mx-auto px-4 py-8">
 				{/* Header */}
-				<div className="bg-white rounded-xl shadow-md p-6 mb-6">
+				<div className="bg-gray-50 rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
 					<div className="flex justify-between items-center">
 						<div>
-							<h1 className="text-3xl font-bold text-gray-900 mb-2">
+							<h1 className="text-3xl font-semibold text-gray-900 mb-2">
 								Welcome, {user?.name}!
 							</h1>
 							<p className="text-gray-600">Customer Dashboard</p>
 						</div>
 						<button
 							onClick={handleLogout}
-							className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+							className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-900 transition hover:border-emerald-200 hover:bg-emerald-50"
 						>
 							Logout
 						</button>
@@ -72,10 +72,10 @@ export default function CustomerDashboard() {
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
 					<button
 						onClick={() => navigate('/restaurants')}
-						className="bg-white rounded-xl shadow-md p-6 border-2 border-transparent hover:bg-gradient-to-br hover:from-blue-50 hover:to-blue-100 hover:border-blue-400 hover:shadow-lg hover:scale-105 transition-all text-left"
+						className="rounded-xl border border-gray-100 bg-white p-6 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md"
 					>
 						<div className="text-4xl mb-3">🍽️</div>
-						<h3 className="text-xl font-bold text-gray-900 mb-2">
+						<h3 className="text-xl font-semibold text-gray-900 mb-2">
 							Browse Restaurants
 						</h3>
 						<p className="text-gray-600">
@@ -83,17 +83,17 @@ export default function CustomerDashboard() {
 						</p>
 					</button>
 
-					<button className="bg-white rounded-xl shadow-md p-6 border-2 border-transparent hover:bg-gradient-to-br hover:from-green-50 hover:to-green-100 hover:border-green-400 hover:shadow-lg hover:scale-105 transition-all text-left">
+					<button className="rounded-xl border border-gray-100 bg-white p-6 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md">
 						<div className="text-4xl mb-3">📦</div>
-						<h3 className="text-xl font-bold text-gray-900 mb-2">
+						<h3 className="text-xl font-semibold text-gray-900 mb-2">
 							My Orders
 						</h3>
 						<p className="text-gray-600">View your order history</p>
 					</button>
 
-					<button className="bg-white rounded-xl shadow-md p-6 border-2 border-transparent hover:bg-gradient-to-br hover:from-pink-50 hover:to-pink-100 hover:border-pink-400 hover:shadow-lg hover:scale-105 transition-all text-left">
+					<button className="rounded-xl border border-gray-100 bg-white p-6 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md">
 						<div className="text-4xl mb-3">❤️</div>
-						<h3 className="text-xl font-bold text-gray-900 mb-2">
+						<h3 className="text-xl font-semibold text-gray-900 mb-2">
 							Favorites
 						</h3>
 						<p className="text-gray-600">
@@ -103,8 +103,8 @@ export default function CustomerDashboard() {
 				</div>
 
 				{/* Account Info */}
-				<div className="bg-white rounded-xl shadow-md p-6">
-					<h2 className="text-2xl font-bold text-gray-900 mb-4">
+				<div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+					<h2 className="text-2xl font-semibold text-gray-900 mb-4">
 						Account Information
 					</h2>
 					<div className="space-y-3">

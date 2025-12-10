@@ -1,111 +1,91 @@
 export default function About() {
 	return (
-		<div className="min-h-screen pt-32 px-4">
-			<div className="max-w-4xl mx-auto">
-				{/* Header */}
-				<div className="text-center mb-12">
-					<h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
-						About NomNom
+		<section className="min-h-screen bg-white px-4 pb-24 pt-28">
+			<div className="mx-auto max-w-5xl">
+				<div className="mb-16 space-y-4 text-center">
+					<p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">
+						Our ethos
+					</p>
+					<h1 className="text-4xl font-semibold tracking-tight md:text-5xl">
+						We make premium food subscriptions feel effortless.
 					</h1>
-					<p className="text-xl text-gray-600">
-						Your trusted food delivery partner
+					<p className="text-lg text-gray-600 md:text-xl">
+						NomNom blends culinary rigor with a frictionless delivery system so you
+						can eat beautifully—on repeat.
 					</p>
 				</div>
 
-				{/* Content Sections */}
-				<div className="space-y-8">
-					<div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200/50">
-						<h2 className="text-2xl font-bold text-gray-800 mb-4 tracking-tighter">
-							Our Mission
-						</h2>
-						<p className="text-gray-600 leading-relaxed">
-							At NomNom, we believe that great food should be
-							accessible to everyone. We connect you with the best
-							local restaurants, bringing delicious meals right to
-							your doorstep. Our mission is to make food ordering
-							simple, fast, and enjoyable.
+				<div className="grid gap-8 md:grid-cols-2">
+					<div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-8 shadow-sm">
+						<h2 className="text-2xl font-semibold text-gray-900">Our mission</h2>
+						<p className="mt-4 text-gray-700 leading-relaxed">
+							Great food should be predictable, never boring. We curate rotating menus,
+							source responsibly, and deliver with precision so your weeknight dinners
+							and weekend gatherings are handled with the same care a chef would give.
 						</p>
 					</div>
 
-					<div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200/50">
-						<h2 className="text-2xl font-bold text-gray-800 mb-4 tracking-tighter">
-							What We Do
-						</h2>
-						<p className="text-gray-600 leading-relaxed mb-4">
-							We partner with top-rated restaurants in your area
-							to offer a wide variety of cuisines. Whether you're
-							craving Italian, Asian, Mexican, or something
-							completely different, we've got you covered.
+					<div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-8 shadow-sm">
+						<h2 className="text-2xl font-semibold text-gray-900">What we do</h2>
+						<p className="mt-4 text-gray-700 leading-relaxed">
+							We partner with vetted kitchens to craft nutritionally balanced menus,
+							then pair them with flexible delivery slots, live tracking, and seamless
+							pausing. Every touchpoint is intentional, from packaging to plating.
 						</p>
-						<ul className="list-disc list-inside text-gray-600 space-y-2">
-							<li>Curated selection of quality restaurants</li>
-							<li>Fast and reliable delivery service</li>
-							<li>Easy-to-use ordering platform</li>
-							<li>Customer support when you need it</li>
+						<ul className="mt-6 space-y-3 text-sm text-gray-700">
+							<li className="flex items-start gap-2">
+								<span className="mt-1 h-2 w-2 rounded-full bg-emerald-600" />
+								Curated, chef-driven recipes refreshed weekly
+							</li>
+							<li className="flex items-start gap-2">
+								<span className="mt-1 h-2 w-2 rounded-full bg-emerald-600" />
+								Precision delivery windows with proactive updates
+							</li>
+							<li className="flex items-start gap-2">
+								<span className="mt-1 h-2 w-2 rounded-full bg-emerald-600" />
+								Allergen-aware labeling and balanced macros
+							</li>
+							<li className="flex items-start gap-2">
+								<span className="mt-1 h-2 w-2 rounded-full bg-emerald-600" />
+								Support that responds in minutes, not hours
+							</li>
 						</ul>
 					</div>
+				</div>
 
-					<div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8">
-						<h2 className="text-2xl font-bold text-gray-800 mb-4 tracking-tighter">
-							Why Choose NomNom?
-						</h2>
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="flex items-start gap-3">
-								<span className="text-blue-500 text-xl">
-									✓
-								</span>
-								<div>
-									<h3 className="font-semibold text-gray-800">
-										Fresh Ingredients
-									</h3>
-									<p className="text-sm text-gray-600">
-										Only the freshest ingredients
-									</p>
+				<div className="mt-10 rounded-2xl border border-emerald-100 bg-emerald-50 p-8 shadow-sm">
+					<h2 className="text-2xl font-semibold text-gray-900">Why NomNom</h2>
+					<div className="mt-6 grid gap-4 md:grid-cols-2">
+						{[
+							{
+								title: 'Ingredient integrity',
+								copy: 'Sourced from trusted farms and suppliers with transparent origins.',
+							},
+							{
+								title: 'Timing that works',
+								copy: 'You set delivery windows—pause, skip, or shift with two taps.',
+							},
+							{
+								title: 'Minimalist experience',
+								copy: 'No clutter, no gimmicks—every screen prioritizes clarity and action.',
+							},
+							{
+								title: 'Sustainability-first',
+								copy: 'Recyclable, insulated packaging engineered to cut waste.',
+							},
+						].map((item) => (
+							<div key={item.title} className="rounded-xl bg-white p-5 shadow-sm">
+								<div className="text-xs font-semibold text-emerald-600">
+									{item.title}
 								</div>
+								<p className="mt-2 text-sm text-gray-700 leading-relaxed">
+									{item.copy}
+								</p>
 							</div>
-							<div className="flex items-start gap-3">
-								<span className="text-blue-500 text-xl">
-									✓
-								</span>
-								<div>
-									<h3 className="font-semibold text-gray-800">
-										Quick Delivery
-									</h3>
-									<p className="text-sm text-gray-600">
-										Fast and efficient service
-									</p>
-								</div>
-							</div>
-							<div className="flex items-start gap-3">
-								<span className="text-blue-500 text-xl">
-									✓
-								</span>
-								<div>
-									<h3 className="font-semibold text-gray-800">
-										Great Prices
-									</h3>
-									<p className="text-sm text-gray-600">
-										Affordable meal options
-									</p>
-								</div>
-							</div>
-							<div className="flex items-start gap-3">
-								<span className="text-blue-500 text-xl">
-									✓
-								</span>
-								<div>
-									<h3 className="font-semibold text-gray-800">
-										24/7 Support
-									</h3>
-									<p className="text-sm text-gray-600">
-										We're here to help
-									</p>
-								</div>
-							</div>
-						</div>
+						))}
 					</div>
 				</div>
 			</div>
-		</div>
+		</section>
 	);
 }

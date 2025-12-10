@@ -67,141 +67,117 @@ export default function Navbar() {
 	};
 
 	return (
-		<div className="Navbar">
-			<nav className="absolute top-4 left-1/2 transform -translate-x-1/2 w-[95%] max-w-7xl z-50">
-				<div className="bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-gray-200/50 px-6 py-4">
-					<div className="flex items-center justify-between">
-						{/* Logo on the left */}
-						<div className="flex-shrink-0">
-							<Link
-								to="/"
-								onClick={handleNavClick}
-								className="flex gap-2 font-bold text-gray-800 items-center hover:text-blue-500 transition-colors cursor-pointer"
-							>
-								<Logo />
-								<span className="text-xl tracking-tighter">NomNom</span>
-							</Link>
-						</div>
+		<header className="Navbar sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur">
+			<nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 lg:px-8">
+				{/* Logo + brand */}
+				<Link
+					to="/"
+					onClick={handleNavClick}
+					className="flex items-center gap-2 text-gray-900 font-semibold tracking-tight"
+				>
+					<Logo />
+					<span className="text-xl">NomNom</span>
+				</Link>
 
-						{/* Navbar items centered */}
-						<div className="hidden lg:flex items-center gap-10 flex-1 justify-center">
-							{navLinks.map((link) => (
-								<Link
-									key={link.path}
-									to={link.path}
-									onClick={handleNavClick}
-									className={`text-sm font-medium transition-all duration-200 relative cursor-pointer ${
-										activePath === link.path
-											? 'text-blue-500'
-											: 'text-gray-700 hover:text-blue-500'
-									}`}
-								>
-									{link.name}
-									{activePath === link.path && (
-										<span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-blue-500 rounded-full"></span>
-									)}
-								</Link>
-							))}
-						</div>
-
-						{/* User menu or Login/Register button on the right */}
-						<div className="flex items-center gap-4 flex-shrink-0">
-							{user ? (
-								<div className="flex items-center gap-3">
-									<button
-										onClick={handleDashboardClick}
-										className="flex items-center gap-2 px-4 py-2.5 rounded-full font-semibold hover:bg-gray-100 transition-all text-sm cursor-pointer text-gray-700"
-									>
-										<div className="w-8 h-8 bg-gradient-to-br from-blue-300 to-indigo-400 rounded-full flex items-center justify-center">
-											<span className="text-white font-bold text-xs">
-												{user.name
-													?.charAt(0)
-													.toUpperCase() || 'U'}
-											</span>
-										</div>
-										<span className="hidden sm:inline">
-											{user.name}
-										</span>
-									</button>
-								</div>
-							) : (
-								<button
-									onClick={() => navigate('/login')}
-									className="bg-gradient-to-r from-blue-400 to-indigo-500 text-white px-6 py-2.5 rounded-full font-semibold hover:from-blue-500 hover:to-indigo-600 transition-all shadow-md hover:shadow-lg text-sm cursor-pointer"
-								>
-									Login / Register
-								</button>
+				{/* Desktop links */}
+				<div className="hidden lg:flex items-center gap-8">
+					{navLinks.map((link) => (
+						<Link
+							key={link.path}
+							to={link.path}
+							onClick={handleNavClick}
+							className={`relative text-sm font-medium transition-colors ${
+								activePath === link.path
+									? 'text-emerald-700'
+									: 'text-gray-700 hover:text-emerald-700'
+							}`}
+						>
+							{link.name}
+							{activePath === link.path && (
+								<span className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full bg-emerald-600" />
 							)}
-							{/* Mobile navigation toggle */}
-							<div className="lg:hidden">
-								<button
-									onClick={() => setIsOpen(!isOpen)}
-									className="p-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
-								>
-									{isOpen ? (
-										<XMarkIcon className="h-6 w-6" />
-									) : (
-										<Bars3Icon className="h-6 w-6" />
-									)}
-								</button>
-							</div>
-						</div>
-					</div>
+						</Link>
+					))}
 				</div>
 
-				{/* Mobile Navigation */}
-				{isOpen && (
-					<div className="fixed z-40 top-20 left-1/2 transform -translate-x-1/2 w-[95%] max-w-md bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col lg:hidden mt-2">
-						<div className="p-6">
-							<div className="flex flex-col gap-3">
-								{navLinks.map((link) => (
-									<Link
-										key={link.path}
-										to={link.path}
-										onClick={handleNavClick}
-										className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
-											activePath === link.path
-												? 'bg-blue-50 text-blue-500 border-l-4 border-blue-500'
-												: 'text-gray-700 hover:bg-gray-50'
-										}`}
-									>
-										{link.name}
-									</Link>
-								))}
-								{user ? (
-									<>
-										<button
-											onClick={() => {
-												handleDashboardClick();
-											}}
-											className="w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all cursor-pointer flex items-center gap-2"
-										>
-											<div className="w-8 h-8 bg-gradient-to-br from-blue-300 to-indigo-400 rounded-full flex items-center justify-center">
-												<span className="text-white font-bold text-xs">
-													{user.name
-														?.charAt(0)
-														.toUpperCase() || 'U'}
-												</span>
-											</div>
-											<span>{user.name}</span>
-										</button>
-									</>
-								) : (
-									<button
-										onClick={() => {
-											navigate('/login');
-											handleNavClick();
-										}}
-										className="w-full bg-gradient-to-r from-blue-400 to-indigo-500 text-white px-4 py-3 rounded-lg text-sm font-semibold hover:from-blue-500 hover:to-indigo-600 transition-all mt-2 shadow-md cursor-pointer"
-									>
-										Login / Register
-									</button>
-								)}
+				{/* Actions */}
+				<div className="flex items-center gap-3">
+					{user ? (
+						<button
+							onClick={handleDashboardClick}
+							className="flex items-center gap-2 rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-900 hover:border-emerald-200 hover:bg-emerald-50 transition"
+						>
+							<div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-600 text-white text-xs font-bold">
+								{user.name?.charAt(0).toUpperCase() || 'U'}
 							</div>
-						</div>
-					</div>
-				)}
+							<span className="hidden sm:inline">{user.name}</span>
+						</button>
+					) : (
+						<button
+							onClick={() => navigate('/login')}
+							className="rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+						>
+							Login / Register
+						</button>
+					)}
+
+					{/* Mobile toggle */}
+					<button
+						onClick={() => setIsOpen(!isOpen)}
+						className="rounded-lg p-2 text-gray-700 hover:bg-gray-100 lg:hidden"
+					>
+						{isOpen ? (
+							<XMarkIcon className="h-6 w-6" />
+						) : (
+							<Bars3Icon className="h-6 w-6" />
+						)}
+					</button>
+				</div>
 			</nav>
-		</div>
+
+			{/* Mobile menu */}
+			{isOpen && (
+				<div className="border-t border-gray-200 bg-white lg:hidden">
+					<div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4">
+						{navLinks.map((link) => (
+							<Link
+								key={link.path}
+								to={link.path}
+								onClick={handleNavClick}
+								className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+									activePath === link.path
+										? 'bg-emerald-50 text-emerald-700'
+										: 'text-gray-800 hover:bg-gray-50'
+								}`}
+							>
+								{link.name}
+							</Link>
+						))}
+
+						{user ? (
+							<button
+								onClick={handleDashboardClick}
+								className="mt-2 flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-900 hover:border-emerald-200 hover:bg-emerald-50 transition"
+							>
+								<div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-600 text-white text-sm font-bold">
+									{user.name?.charAt(0).toUpperCase() || 'U'}
+								</div>
+								<span>{user.name}</span>
+							</button>
+						) : (
+							<button
+								onClick={() => {
+									navigate('/login');
+									handleNavClick();
+								}}
+								className="mt-2 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+							>
+								Login / Register
+							</button>
+						)}
+					</div>
+				</div>
+			)}
+		</header>
 	);
 }

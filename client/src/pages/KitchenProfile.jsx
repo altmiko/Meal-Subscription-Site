@@ -3,250 +3,368 @@ import { useParams } from 'react-router-dom';
 import axiosInstance from '../api/axios';
 import { FaStar, FaUtensils, FaMapMarkerAlt, FaPhone, FaClock } from 'react-icons/fa';
 
+const FALLBACK_IMAGE = 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=800';
+
 export default function KitchenProfile() {
-	const { id } = useParams();
-	const [kitchen, setKitchen] = useState(null);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState(null);
+    const { id } = useParams();
+    const [kitchen, setKitchen] = useState(null);
+    const [menuItems, setMenuItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-	useEffect(() => {
-		const fetchKitchen = async () => {
-			try {
-				setLoading(true);
-				const response = await axiosInstance.get(
-					`/api/restaurants/${id}`
-				);
-				setKitchen(response.data);
-			} catch (err) {
-				setError(err.message || 'Failed to fetch kitchen data');
-			} finally {
-				setLoading(false);
-			}
-		};
+    // NEW: modal state for selected menu item
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [showItemModal, setShowItemModal] = useState(false);
 
-		fetchKitchen();
-	}, [id]);
+    useEffect(() => {
+        const fetchKitchen = async () => {
+            try {
+                setLoading(true);
+                const response = await axiosInstance.get(
+                    `/api/restaurants/${id}`
+                );
+                setKitchen(response.data);
+            } catch (err) {
+                setError(err.message || 'Failed to fetch kitchen data');
+            } finally {
+                setLoading(false);
+            }
+        };
 
-	if (loading) {
-		return (
-			<div className="min-h-screen flex items-center justify-center pt-24 bg-gray-50">
-				<div className="text-center">
-					<div className="animate-spin rounded-full h-16 w-16 border-b-4 border-orange-500 border-t-transparent mx-auto mb-4"></div>
-					<p className="text-gray-600 text-lg">
-						Loading kitchen details...
-					</p>
-				</div>
-			</div>
-		);
-	}
+        fetchKitchen();
+    }, [id]);
 
-	if (error) {
-		return (
-			<div className="min-h-screen flex items-center justify-center pt-24 p-4 bg-gray-50">
-				<div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
-					<div className="text-5xl mb-4 text-red-500">⚠️</div>
-					<h2 className="text-2xl font-bold text-gray-900 mb-3">
-						Error Loading Kitchen
-					</h2>
-					<p className="text-gray-600 mb-6">{error}</p>
-					<button
-						onClick={() => window.location.reload()}
-						className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all duration-300"
-					>
-						Try Again
-					</button>
-				</div>
-			</div>
-		);
-	}
+    useEffect(() => {
+        const fetchMenuItems = async () => {
+            if (!kitchen) return;
+            try {
+                const response = await axiosInstance.get(
+                    `/api/menu/restaurant/${id}`
+                );
+                setMenuItems(response.data.data || []);
+            } catch (err) {
+                console.error('Failed to fetch menu items:', err);
+                setMenuItems([]);
+            }
+        };
 
-	if (!kitchen) {
-		return (
-			<div className="min-h-screen flex items-center justify-center pt-24 bg-gray-50">
-				<div className="text-center">
-					<h2 className="text-2xl font-bold text-gray-900 mb-2">
-						Kitchen Not Found
-					</h2>
-					<p className="text-gray-600">
-						The restaurant you're looking for doesn't exist.
-					</p>
-				</div>
-			</div>
-		);
-	}
+        fetchMenuItems();
+    }, [kitchen, id]);
 
-	// Format address
-	const formatAddress = (location) => {
-		if (!location) return 'Address not available';
-		const parts = [
-			location.house,
-			location.road,
-			location.area,
-			location.city,
-		].filter(Boolean);
-		return parts.length > 0 ? parts.join(', ') : 'Address not available';
-	};
+    // NEW: close modal on Escape
+    useEffect(() => {
+        const onKey = (e) => {
+            if (e.key === 'Escape') closeItemModal();
+        };
+        if (showItemModal) window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [showItemModal]);
 
-	return (
-		<div className="min-h-screen bg-gray-50 pt-24">
-			{/* Hero Section */}
-			<div className="bg-gradient-to-br from-orange-400 to-amber-500 text-white py-16 px-4 relative overflow-hidden">
-				<div className="absolute inset-0 bg-black opacity-10"></div>
-				<div className="max-w-7xl mx-auto relative z-10 text-center">
-					<h1 className="text-4xl md:text-5xl font-bold mb-3 tracking-tight">
-						{kitchen.name}
-					</h1>
-					<p className="text-xl max-w-3xl mx-auto mb-6">
-						{kitchen.description || 'Serving delicious meals with passion'}
-					</p>
-					
-					{kitchen.rating && (
-						<div className="flex items-center justify-center gap-2 mb-4">
-							{[...Array(5)].map((_, i) => (
-								<FaStar 
-									key={i} 
-									className={`text-xl ${i < Math.floor(kitchen.rating) ? 'text-yellow-400' : 'text-gray-300'}`} 
-								/>
-							))}
-							<span className="text-lg font-semibold">
-								{kitchen.rating?.toFixed(1)} ({kitchen.totalRatings || 0} reviews)
-							</span>
-						</div>
-					)}
-					
-					<div className="flex flex-wrap justify-center gap-4 mt-8">
-						{kitchen.isOpen !== undefined && (
-							<div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2">
-								<FaClock className="text-white" />
-								<span className="font-semibold">
-									{kitchen.isOpen ? 'OPEN NOW' : 'CLOSED'}
-								</span>
-							</div>
-						)}
-						{kitchen.cuisineTypes && kitchen.cuisineTypes.length > 0 && (
-							<div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2">
-								<FaUtensils className="text-white" />
-								<span className="font-semibold">
-									{kitchen.cuisineTypes.slice(0, 3).join(', ')}
-								</span>
-							</div>
-						)}
-					</div>
-				</div>
-			</div>
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center pt-24 bg-gray-50">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-gray-600 text-lg">
+                        Loading kitchen details...
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
-			{/* Restaurant Info */}
-			<div className="max-w-7xl mx-auto px-4 py-8">
-				<div className="bg-white rounded-xl shadow-md p-6 mb-8">
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-						<div>
-							<h2 className="text-2xl font-bold text-gray-900 mb-4">About Us</h2>
-							<p className="text-gray-700 mb-6">
-								{kitchen.about || `Welcome to ${kitchen.name}, where we serve delicious meals made with fresh ingredients and passion.`}
-							</p>
-							
-							<div className="space-y-3">
-								{kitchen.location && (
-									<div className="flex items-start">
-										<FaMapMarkerAlt className="text-orange-500 mt-1 mr-3" />
-										<div>
-											<h3 className="font-semibold text-gray-900">Address</h3>
-											<p className="text-gray-700">{formatAddress(kitchen.location)}</p>
-										</div>
-									</div>
-								)}
-								
-								{kitchen.phone && (
-									<div className="flex items-start">
-										<FaPhone className="text-orange-500 mt-1 mr-3" />
-										<div>
-											<h3 className="font-semibold text-gray-900">Phone</h3>
-											<p className="text-gray-700">{kitchen.phone}</p>
-										</div>
-									</div>
-								)}
-							</div>
-						</div>
-						
-						{/* Hours Placeholder */}
-						<div>
-							<h2 className="text-2xl font-bold text-gray-900 mb-4">Opening Hours</h2>
-							<div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-4">
-								<ul className="space-y-2">
-									<li className="flex justify-between py-2 border-b border-orange-100">
-										<span className="font-medium">Monday - Friday</span>
-										<span>9:00 AM - 9:00 PM</span>
-									</li>
-									<li className="flex justify-between py-2 border-b border-orange-100">
-										<span className="font-medium">Saturday - Sunday</span>
-										<span>10:00 AM - 10:00 PM</span>
-									</li>
-								</ul>
-							</div>
-						</div>
-					</div>
-				</div>
+    if (error) {
+        return (
+            <div className="min-h-screen flex items-center justify-center pt-24 p-4 bg-gray-50">
+                <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
+                    <div className="text-5xl mb-4 text-red-500">⚠️</div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                        Error Loading Kitchen
+                    </h2>
+                    <p className="text-gray-600 mb-6">{error}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="bg-emerald-600 text-white px-6 py-3 rounded-lg font-semibold shadow-sm hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-lg transition-all duration-300"
+                    >
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
-				{/* Menu Section */}
-				<div className="mb-12">
-					<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-						<h2 className="text-3xl font-bold text-gray-900">Our Menu</h2>
-						<div className="flex items-center gap-2">
-							<span className="bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-								{kitchen.meals?.length || 0} items
-							</span>
-						</div>
-					</div>
-					
-					{kitchen.meals && kitchen.meals.length > 0 ? (
-						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-							{kitchen.meals.map((meal) => (
-								<div
-									key={meal._id}
-									className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1 flex flex-col h-full"
-								>
-									{/* Meal Image Placeholder */}
-									<div className="h-52 bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center">
-										<span className="text-6xl text-orange-500">
-											🍽️
-										</span>
-									</div>
+    if (!kitchen) {
+        return (
+            <div className="min-h-screen flex items-center justify-center pt-24 bg-gray-50">
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                        Kitchen Not Found
+                    </h2>
+                    <p className="text-gray-600">
+                        The restaurant you're looking for doesn't exist.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
-									{/* Meal Info */}
-									<div className="p-5 flex flex-col flex-grow">
-										<div className="flex-grow">
-											<div className="flex justify-between items-start">
-												<h3 className="text-xl font-bold text-gray-900 mb-2">
-													{meal.name}
-												</h3>
-												<p className="text-lg font-bold text-orange-600 whitespace-nowrap">
-													${meal.price.toFixed(2)}
-												</p>
-											</div>
-											<p className="text-gray-600 mb-4">
-												{meal.description}
-											</p>
-										</div>
-										<button className="bg-gradient-to-r from-orange-500 to-amber-500 text-white w-full py-3 rounded-lg font-semibold shadow-md hover:from-orange-600 hover:to-amber-600 transition-all duration-300 mt-auto">
-											Add to Cart
-										</button>
-									</div>
-								</div>
-							))}
-						</div>
-					) : (
-						<div className="bg-white rounded-xl shadow-md p-12 text-center">
-							<div className="text-7xl mb-6 text-orange-500">🍽️</div>
-							<h3 className="text-2xl font-bold text-gray-900 mb-3">
-								Our menu is being prepared
-							</h3>
-							<p className="text-gray-600">
-								Check back soon for delicious options!
-							</p>
-						</div>
-					)}
-				</div>
-			</div>
-		</div>
-	);
+    // Format address
+    const formatAddress = (location) => {
+        if (!location) return 'Address not available';
+        const parts = [
+            location.house,
+            location.road,
+            location.area,
+            location.city,
+        ].filter(Boolean);
+        return parts.length > 0 ? parts.join(', ') : 'Address not available';
+    };
+
+    // NEW: open / close modal helpers
+    const openItemModal = (item) => {
+        setSelectedItem(item);
+        setShowItemModal(true);
+        // prevent background scroll
+        document.documentElement.style.overflow = 'hidden';
+    };
+    const closeItemModal = () => {
+        setShowItemModal(false);
+        setSelectedItem(null);
+        document.documentElement.style.overflow = '';
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 pt-24">
+            {/* Hero Section */}
+            <div className="bg-gradient-to-br from-emerald-700 via-emerald-600 to-emerald-500 text-white py-16 px-4 relative overflow-hidden">
+                <div className="absolute inset-0 bg-black opacity-10"></div>
+                <div className="max-w-7xl mx-auto relative z-10 text-center">
+                    <h1 className="text-4xl md:text-5xl font-bold mb-3 tracking-tight">
+                        {kitchen.name}
+                    </h1>
+                    <p className="text-xl max-w-3xl mx-auto mb-6">
+                        {kitchen.description || 'Serving delicious meals with passion'}
+                    </p>
+                    
+                    <div className="flex flex-wrap justify-center gap-4 mt-8">
+                        {kitchen.isOpen !== undefined && (
+                            <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2">
+                                <FaClock className="text-white" />
+                                <span className="font-semibold">
+                                    {kitchen.isOpen ? 'OPEN NOW' : 'CLOSED'}
+                                </span>
+                            </div>
+                        )}
+                        {kitchen.cuisineTypes && kitchen.cuisineTypes.length > 0 && (
+                            <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2">
+                                <FaUtensils className="text-white" />
+                                <span className="font-semibold">
+                                    {kitchen.cuisineTypes.slice(0, 3).join(', ')}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Restaurant Info */}
+            <div className="max-w-7xl mx-auto px-4 py-8">
+                <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-900 mb-4">About Us</h2>
+                            <p className="text-gray-700 mb-6">
+                                {kitchen.about || `Welcome to ${kitchen.name}, where we serve delicious meals made with fresh ingredients and passion.`}
+                            </p>
+                            
+                            <div className="space-y-3">
+                                {kitchen.location && (
+                                    <div className="flex items-start">
+                                        <FaMapMarkerAlt className="text-emerald-600 mt-1 mr-3" />
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900">Address</h3>
+                                            <p className="text-gray-700">{formatAddress(kitchen.location)}</p>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {kitchen.phone && (
+                                    <div className="flex items-start">
+                                        <FaPhone className="text-emerald-600 mt-1 mr-3" />
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900">Phone</h3>
+                                            <p className="text-gray-700">{kitchen.phone}</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                       
+                    </div>
+                </div>
+
+                {/* Menu Section */}
+                <div className="mb-12">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <h2 className="text-3xl font-bold text-gray-900">Our Menu</h2>
+                        <div className="flex items-center gap-2">
+                            <span className="bg-emerald-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                                {menuItems?.length || 0} items
+                            </span>
+                        </div>
+                    </div>
+                    
+                    {menuItems && menuItems.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {menuItems.map((item) => (
+                                <div
+                                    key={item._id}
+                                    // OPEN MODAL when clicking the card
+                                    onClick={() => openItemModal(item)}
+                                    className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1 flex flex-col h-full cursor-pointer"
+                                >
+                                    {/* Item Image - use DB url with fallback */}
+                                    <img
+                                        src={item.imageUrl || FALLBACK_IMAGE}
+                                        alt={item.name || 'Menu item'}
+                                        onError={(e) => {
+                                            e.currentTarget.onerror = null;
+                                            e.currentTarget.src = FALLBACK_IMAGE;
+                                        }}
+                                        className="h-52 w-full object-cover"
+                                    />
+
+
+                                    {/* Item Info */}
+                                    <div className="p-5 flex flex-col flex-grow">
+                                        <div className="flex-grow">
+                                            <div className="flex justify-between items-start">
+                                                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                                    {item.name}
+                                                </h3>
+                                                <p className="text-lg font-bold text-emerald-700 whitespace-nowrap ml-2">
+                                                    {typeof item.price === 'number' ? item.price : item.price} BDT
+                                                </p>
+                                            </div>
+                                            {item.description && (
+                                                <p className="text-gray-600 mb-4 text-sm">
+                                                    {item.description}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <button
+                                            // prevent card click when clicking the Add to Cart button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                // existing add-to-cart behavior (placeholder)
+                                                console.log('Add to cart:', item._id);
+                                            }}
+                                            className="bg-emerald-600 text-white w-full py-3 rounded-lg font-semibold shadow-sm hover:-translate-y-0.5 hover:bg-emerald-700 transition-all duration-300 mt-auto"
+                                        >
+                                            Add to Cart
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-xl shadow-md p-12 text-center">
+                            <div className="text-7xl mb-6 text-emerald-600">🍽️</div>
+                            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                                Menu coming soon
+                            </h3>
+                            <p className="text-gray-600">
+                                This restaurant hasn't added their menu yet. Check back soon!
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* NEW: Item detail modal */}
+            {showItemModal && selectedItem && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4"
+                    onClick={closeItemModal}
+                    aria-hidden={!showItemModal}
+                >
+                    <div
+                        className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+                        onClick={(e) => e.stopPropagation()}
+                        role="dialog"
+                        aria-modal="true"
+                    >
+                        {/* Image at top to avoid scaling/layout issues */}
+                        <div className="w-full">
+                            <img
+                                src={selectedItem.imageUrl || FALLBACK_IMAGE}
+                                alt={selectedItem.name}
+                                onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = FALLBACK_IMAGE;
+                                }}
+                                className="w-full h-64 md:h-80 object-cover"
+                            />
+                        </div>
+                        
+                        {/* Info below the image */}
+                        <div className="p-6">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <h3 className="text-2xl font-bold text-gray-900">{selectedItem.name}</h3>
+                                    <p className="text-gray-600 mt-2">{selectedItem.description}</p>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-lg font-bold text-emerald-700">
+                                        {typeof selectedItem.price === 'number'
+                                            ? selectedItem.price
+                                            : selectedItem.price} BDT
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 space-y-3 text-sm text-gray-700">
+                                {selectedItem.calories !== undefined && selectedItem.calories !== null && (
+                                    <div>Calories: <span className="font-semibold">{selectedItem.calories} kcal</span></div>
+                                )}
+
+                                <div>
+                                    <div className="font-semibold mb-1">Ingredients</div>
+                                    {selectedItem.ingredients && selectedItem.ingredients.length > 0 ? (
+                                        <ul className="list-disc ml-5 text-gray-700">
+                                            {Array.isArray(selectedItem.ingredients)
+                                                ? selectedItem.ingredients.map((ing, i) => <li key={i}>{ing}</li>)
+                                                : String(selectedItem.ingredients).split(',').map((ing, i) => <li key={i}>{ing.trim()}</li>)
+                                            }
+                                        </ul>
+                                    ) : (
+                                        <div className="text-gray-500">No ingredients provided</div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        // placeholder add to cart
+                                        console.log('Add to cart from modal:', selectedItem._id);
+                                        closeItemModal();
+                                    }}
+                                    className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition font-semibold"
+                                >
+                                    Add to Cart
+                                </button>
+                                <button
+                                    onClick={closeItemModal}
+                                    className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition font-semibold"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }

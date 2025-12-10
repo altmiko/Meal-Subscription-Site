@@ -1,15 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../api/axios';
-import { useNavigate, useParams } from 'react-router-dom';
+
+const FALLBACK_IMAGE = 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=800';
 
 export default function ManageMenu() {
-    const { id } = useParams();
     const navigate = useNavigate();
     const [items, setItems] = useState([]);
-    const [form, setForm] = useState({ name: '', description: '', price: '' });
+    const [form, setForm] = useState({
+        name: '',
+        description: '',
+        price: '',
+        calories: '',
+        ingredients: '',
+    });
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [editingId, setEditingId] = useState(null);
+
+    // new refs / highlight state for scroll + highlight on edit
+    const formRef = useRef(null);
+    const nameInputRef = useRef(null);
+    const [highlightEdit, setHighlightEdit] = useState(false);
 
     useEffect(() => {
         loadItems();
@@ -18,10 +31,11 @@ export default function ManageMenu() {
     const loadItems = async () => {
         setLoading(true);
         try {
-            const res = await axiosInstance.get(`/api/restaurants/${id}/menu`);
+            const res = await axiosInstance.get('/api/menu');
             setItems(res.data.data || []);
         } catch (err) {
             console.error(err);
+            setError('Failed to load menu items');
         } finally {
             setLoading(false);
         }
@@ -31,100 +45,286 @@ export default function ManageMenu() {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
-    const handleAdd = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        if (!form.name.trim() || form.price === '') {
-            setError('Name and price are required');
+
+        if (!form.name.trim()) {
+            setError('Item name is required');
             return;
         }
-        const priceNum = Number(form.price);
-        if (Number.isNaN(priceNum)) return setError('Price must be a number');
+        if (!form.price || Number.isNaN(Number(form.price)) || Number(form.price) < 0) {
+            setError('Valid price is required');
+            return;
+        }
+        if (form.calories && (Number.isNaN(Number(form.calories)) || Number(form.calories) < 0)) {
+            setError('Calories must be a valid non-negative number');
+            return;
+        }
 
         setSaving(true);
         try {
-            await axiosInstance.post(`/api/restaurants/${id}/menu`, {
+            const payload = {
                 name: form.name.trim(),
                 description: form.description.trim(),
-                price: priceNum,
-            });
-            setForm({ name: '', description: '', price: '' });
+                price: Number(form.price),
+                calories: form.calories ? Number(form.calories) : undefined,
+                ingredients: form.ingredients
+                    ? form.ingredients.split(',').map((i) => i.trim()).filter(Boolean)
+                    : [],
+            };
+
+            if (editingId) {
+                // Update existing item
+                await axiosInstance.put(`/api/menu/${editingId}`, payload);
+                setEditingId(null);
+            } else {
+                // Create new item
+                await axiosInstance.post('/api/menu', payload);
+            }
+
+            setForm({ name: '', description: '', price: '', calories: '', ingredients: '' });
             loadItems();
         } catch (err) {
-            setError(err.response?.data?.message || err.message || 'Failed to add');
+            setError(err.response?.data?.message || err.message || 'Failed to save');
         } finally {
             setSaving(false);
         }
     };
 
+    const handleEdit = (item) => {
+        setForm({
+            name: item.name || '',
+            description: item.description || '',
+            price: item.price ?? '',
+            calories: item.calories ?? '',
+            ingredients: Array.isArray(item.ingredients) ? item.ingredients.join(', ') : (item.ingredients || ''),
+        });
+        setEditingId(item._id);
+
+        // scroll to form and briefly highlight it
+        // small timeout ensures DOM updated before scrolling/focusing
+        setTimeout(() => {
+            if (formRef.current) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                //formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            // focus the name input for quicker editing
+            nameInputRef.current?.focus();
+            // show highlight (CSS ring) for 2.5s
+            setHighlightEdit(true);
+            setTimeout(() => setHighlightEdit(false), 2500);
+        }, 100);
+    };
+
+    const handleCancel = () => {
+        setForm({ name: '', description: '', price: '', calories: '', ingredients: '' });
+        setEditingId(null);
+        setError('');
+    };
+
     const handleDelete = async (id) => {
-        if (!confirm('Delete this item?')) return;
+        if (!confirm('Delete this menu item?')) return;
+
         try {
-            await axiosInstance.delete(`/api/restaurants/${id}/menu/${id}`);
-            setItems((s) => s.filter((i) => i._id !== id));
+            await axiosInstance.delete(`/api/menu/${id}`);
+            loadItems();
         } catch (err) {
-            console.error(err);
-            alert('Delete failed');
+            alert('Failed to delete item');
         }
     };
 
-    const startEdit = (item) => {
-        const name = prompt('Edit name', item.name);
-        if (name === null) return;
-        const desc = prompt('Edit description', item.description || '');
-        if (desc === null) return;
-        const price = prompt('Edit price', String(item.price));
-        if (price === null) return;
-        const priceNum = Number(price);
-        if (Number.isNaN(priceNum)) return alert('Invalid price');
-
-        axiosInstance.put(`/api/menu/${item._id}`, { name, description: desc, price: priceNum })
-            .then(() => loadItems())
-            .catch(() => alert('Update failed'));
-    };
-
     return (
-        <div className="min-h-screen pt-24 bg-gray-50">
-            <div className="max-w-4xl mx-auto p-6">
-                <div className="bg-white rounded-xl shadow p-6 mb-6">
-                    <h1 className="text-2xl font-bold mb-4">Manage Menu</h1>
+        <div className="min-h-screen pt-40 bg-white pb-8">
+            <div className="max-w-4xl mx-auto px-4">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                    <h1 className="text-3xl font-bold text-gray-900">Manage Menu</h1>
+                    <button
+                        onClick={() => navigate('/dashboard/restaurant')}
+                        className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
+                    >
+                        Back
+                    </button>
+                </div>
 
-                    <form onSubmit={handleAdd} className="grid grid-cols-1 gap-3">
-                        {error && <div className="text-sm text-red-600">{error}</div>}
-                        <input name="name" value={form.name} onChange={handleChange} placeholder="Item name" className="p-3 border rounded" />
-                        <input name="description" value={form.description} onChange={handleChange} placeholder="Description (optional)" className="p-3 border rounded" />
-                        <input name="price" value={form.price} onChange={handleChange} placeholder="Price" className="p-3 border rounded" />
-                        <div className="flex gap-3">
-                            <button type="submit" disabled={saving} className="px-4 py-2 bg-green-500 text-white rounded">
-                                {saving ? 'Adding...' : 'Add Item'}
+                {/* Add/Edit Form */}
+                <div
+                    ref={formRef}
+                    className={`bg-white rounded-xl shadow-md p-6 mb-6 transition-all ${highlightEdit ? 'ring-4 ring-emerald-200 ring-opacity-70' : ''}`}
+                >
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">
+                        {editingId ? 'Edit Menu Item' : 'Add New Menu Item'}
+                    </h2>
+
+                    {error && (
+                        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                            {error}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Item Name <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                ref={nameInputRef}
+                                type="text"
+                                name="name"
+                                value={form.name}
+                                onChange={handleChange}
+                                className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-emerald-500 focus:outline-none"
+                                placeholder="e.g., Margherita Pizza"
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Description
+                            </label>
+                            <textarea
+                                name="description"
+                                value={form.description}
+                                onChange={handleChange}
+                                className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-emerald-500 focus:outline-none resize-none"
+                                placeholder="Item description (optional)"
+                                rows="3"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Price <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="number"
+                                    name="price"
+                                    value={form.price}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-emerald-500 focus:outline-none"
+                                    placeholder="0.00"
+                                    step="0.01"
+                                    min="0"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Calories (kcal)
+                                </label>
+                                <input
+                                    type="number"
+                                    name="calories"
+                                    value={form.calories}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-emerald-500 focus:outline-none"
+                                    placeholder="e.g., 250"
+                                    min="0"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Ingredients (comma separated)
+                                </label>
+                                <input
+                                    type="text"
+                                    name="ingredients"
+                                    value={form.ingredients}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-emerald-500 focus:outline-none"
+                                    placeholder="sugar, tea, milk"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                type="submit"
+                                disabled={saving}
+                                className="flex-1 px-4 py-2 rounded-lg bg-emerald-600 text-white font-semibold transition hover:-translate-y-0.5 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {saving ? 'Saving...' : editingId ? 'Update Item' : 'Add Item'}
                             </button>
-                            <button type="button" onClick={() => navigate(-1)} className="px-4 py-2 bg-gray-200 rounded">Back</button>
+                            {editingId && (
+                                <button
+                                    type="button"
+                                    onClick={handleCancel}
+                                    className="flex-1 px-4 py-2 rounded-lg border border-gray-200 text-gray-800 font-semibold transition hover:border-emerald-200 hover:bg-emerald-50"
+                                >
+                                    Cancel
+                                </button>
+                            )}
                         </div>
                     </form>
                 </div>
 
-                <div className="bg-white rounded-xl shadow p-6">
-                    <h2 className="text-xl font-semibold mb-4">Current Items</h2>
+                {/* Menu Items List */}
+                <div className="bg-white rounded-xl shadow-md p-6">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Menu Items</h2>
+
                     {loading ? (
-                        <div>Loading...</div>
+                        <div className="text-center py-8">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-emerald-600 border-t-transparent mx-auto"></div>
+                            <p className="text-gray-600 mt-4">Loading menu items...</p>
+                        </div>
                     ) : items.length === 0 ? (
-                        <div className="text-gray-500">No items yet</div>
+                        <div className="text-center py-8 text-gray-500">
+                            No menu items yet. Add your first item above!
+                        </div>
                     ) : (
-                        <ul className="space-y-3">
-                            {items.map((it) => (
-                                <li key={it._id} className="flex items-center justify-between border p-3 rounded">
-                                    <div>
-                                        <div className="font-semibold">{it.name}</div>
-                                        <div className="text-sm text-gray-600">{it.description}</div>
-                                        <div className="text-sm font-medium mt-1">${it.price.toFixed(2)}</div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {items.map((item) => (
+                                <div key={item._id} className="border-2 border-gray-100 rounded-lg p-4 hover:shadow-md transition flex flex-col">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="flex-1 flex gap-4">
+                                            <img
+                                                src={item.imageUrl || FALLBACK_IMAGE}
+                                                alt={item.name || 'Menu item'}
+                                                onError={(e) => {
+                                                    e.currentTarget.onerror = null;
+                                                    e.currentTarget.src = FALLBACK_IMAGE;
+                                                }}
+                                                className="w-24 h-20 object-cover rounded-lg flex-shrink-0"
+                                            />
+                                            <div>
+                                                <div className="font-semibold">{item.name}</div>
+                                                <div className="text-sm text-gray-600">{item.description}</div>
+                                                {item.calories !== undefined && item.calories !== null && (
+                                                    <div className="text-xs text-gray-500 mt-1">Calories: {item.calories} kcal</div>
+                                                )}
+                                                {item.ingredients && item.ingredients.length > 0 && (
+                                                    <div className="text-xs text-gray-500 mt-1">Ingredients: {Array.isArray(item.ingredients) ? item.ingredients.join(', ') : item.ingredients}</div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="text-lg font-semibold text-emerald-700 ml-2 whitespace-nowrap">
+                                            {typeof item.price === 'number' ? `${item.price} BDT` : item.price}
+                                        </div>
                                     </div>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => startEdit(it)} className="px-3 py-1 bg-yellow-400 rounded">Edit</button>
-                                        <button onClick={() => handleDelete(it._id)} className="px-3 py-1 bg-red-500 text-white rounded">Delete</button>
+
+                                    <div className="flex gap-2 mt-4">
+                                        <button
+                                            onClick={() => handleEdit(item)}
+                                            className="flex-1 px-3 py-2 rounded border border-emerald-200 text-sm font-semibold text-emerald-800 hover:bg-emerald-50 transition"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(item._id)}
+                                            className="flex-1 px-3 py-2 rounded border border-gray-200 text-sm font-semibold text-gray-800 hover:bg-gray-100 transition"
+                                        >
+                                            Delete
+                                        </button>
                                     </div>
-                                </li>
+                                </div>
                             ))}
-                        </ul>
+                        </div>
                     )}
                 </div>
             </div>

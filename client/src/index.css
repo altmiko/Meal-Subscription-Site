@@ -1,18 +1,19 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap');
 
-@font-face {
-  font-family: 'Benton Sans MD';
-  src: url('/fonts/BentonSans-Medium.woff2') format('woff2'),
-       url('/fonts/BentonSans-Medium.woff') format('woff');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@theme {
-  --font-family-sans: 'Benton Sans MD', system-ui, -apple-system, sans-serif;
+:root {
+	color: #0f172a;
+	background-color: #ffffff;
 }
 
 body {
-  font-family: 'Benton Sans MD', system-ui, -apple-system, sans-serif;
+	font-family: 'Inter', system-ui, -apple-system, sans-serif;
+	background: #ffffff;
+}
+
+h1,
+h2,
+h3,
+h4 {
+	font-family: 'Poppins', 'Inter', system-ui, -apple-system, sans-serif;
 }
