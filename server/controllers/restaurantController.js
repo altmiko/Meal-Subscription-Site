@@ -20,6 +20,18 @@ export const getAllRestaurants = async (req, res) => {
     }
 };
 
+export const getRestaurantById = async (req, res) => {
+    try {
+        const restaurant = await User.findById(req.params.id);
+        if (!restaurant) {
+            return res.status(404).json({ error: 'Restaurant not found' });
+        }
+        res.json(restaurant);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 export const updateRestaurantStatus = async (req, res) => {
     try {
         const userId = req.user?.id;

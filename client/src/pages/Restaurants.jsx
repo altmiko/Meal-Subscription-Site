@@ -72,7 +72,7 @@ export default function Restaurants() {
 		return (
 			<div className="min-h-screen bg-gray-50 flex items-center justify-center pt-24">
 				<div className="text-center">
-					<div className="animate-spin rounded-full h-16 w-16 border-b-4 border-green-500 border-t-transparent mx-auto mb-4"></div>
+					<div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
 					<p className="text-gray-600 text-lg">
 						Loading restaurants...
 					</p>
@@ -106,7 +106,7 @@ export default function Restaurants() {
 			<div className="max-w-7xl mx-auto px-4 py-8">
 				{/* Header */}
 				<div className="mb-8 text-center">
-					<h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-4">
+					<h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-4 tracking-tighter">
 						Restaurants
 					</h1>
 					<p className="text-xl text-gray-600 mb-6">
@@ -125,7 +125,7 @@ export default function Restaurants() {
 									onChange={(e) =>
 										setSearchTerm(e.target.value)
 									}
-									className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-green-500 focus:outline-none transition"
+									className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:outline-none transition"
 								/>
 							</div>
 
@@ -136,7 +136,7 @@ export default function Restaurants() {
 									onChange={(e) =>
 										setSelectedCuisine(e.target.value)
 									}
-									className="px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-green-500 focus:outline-none transition bg-white"
+									className="px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:outline-none transition bg-white"
 								>
 									<option value="">All Cuisines</option>
 									{allCuisines.map((cuisine) => (
@@ -151,7 +151,7 @@ export default function Restaurants() {
 
 					{/* Results Count */}
 					<p className="text-gray-700">
-						<span className="font-semibold text-green-600">
+						<span className="font-semibold text-blue-600">
 							{filteredRestaurants.length}
 						</span>{' '}
 						restaurant{filteredRestaurants.length !== 1 ? 's' : ''}{' '}
@@ -182,7 +182,7 @@ export default function Restaurants() {
 									setSearchTerm('');
 									setSelectedCuisine('');
 								}}
-								className="text-green-600 hover:text-green-700 font-semibold underline"
+								className="text-blue-600 hover:text-blue-700 font-semibold underline"
 							>
 								Clear filters
 							</button>
@@ -200,14 +200,14 @@ export default function Restaurants() {
 								}
 							>
 								{/* Restaurant Image Placeholder */}
-								<div className="h-48 bg-gradient-to-br from-green-300 to-emerald-400 flex items-center justify-center relative overflow-hidden">
+								<div className="h-48 bg-gradient-to-br from-blue-300 to-indigo-400 flex items-center justify-center relative overflow-hidden">
 									<span className="text-7xl z-10">🍽️</span>
 									<div className="absolute inset-0 bg-black opacity-0 hover:opacity-10 transition-opacity"></div>
 								</div>
 
 								{/* Restaurant Info */}
 								<div className="p-6">
-									<h2 className="text-2xl font-bold text-gray-900 mb-3 line-clamp-1">
+									<h2 className="text-2xl font-bold text-gray-900 mb-3 line-clamp-1 tracking-tighter">
 										{restaurant.restaurantName || restaurant.name ||
 											'Unnamed Restaurant'}
 									</h2>
@@ -240,7 +240,7 @@ export default function Restaurants() {
 															(cuisine, idx) => (
 																<span
 																	key={idx}
-																	className="inline-block bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full"
+																	className="inline-block bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-1 rounded-full"
 																>
 																	{cuisine}
 																</span>
@@ -258,7 +258,7 @@ export default function Restaurants() {
 												`/restaurants/${restaurant._id}`
 											);
 										}}
-										className="w-full bg-gradient-to-r from-green-400 to-emerald-500 text-white py-3 rounded-lg hover:from-green-500 hover:to-emerald-600 transition font-semibold shadow-md hover:shadow-lg"
+										className="w-full bg-gradient-to-r from-blue-400 to-indigo-500 text-white py-3 rounded-lg hover:from-blue-500 hover:to-indigo-600 transition font-semibold shadow-md hover:shadow-lg"
 									>
 										View Menu
 									</button>

@@ -14,8 +14,8 @@ export default function About() {
 
 				{/* Content Sections */}
 				<div className="space-y-8">
-					<div className="bg-white rounded-xl p-8 shadow-md">
-						<h2 className="text-2xl font-bold text-gray-800 mb-4">
+					<div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200/50">
+						<h2 className="text-2xl font-bold text-gray-800 mb-4 tracking-tighter">
 							Our Mission
 						</h2>
 						<p className="text-gray-600 leading-relaxed">
@@ -27,8 +27,8 @@ export default function About() {
 						</p>
 					</div>
 
-					<div className="bg-white rounded-xl p-8 shadow-md">
-						<h2 className="text-2xl font-bold text-gray-800 mb-4">
+					<div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200/50">
+						<h2 className="text-2xl font-bold text-gray-800 mb-4 tracking-tighter">
 							What We Do
 						</h2>
 						<p className="text-gray-600 leading-relaxed mb-4">
@@ -45,13 +45,13 @@ export default function About() {
 						</ul>
 					</div>
 
-					<div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-8">
-						<h2 className="text-2xl font-bold text-gray-800 mb-4">
+					<div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-8">
+						<h2 className="text-2xl font-bold text-gray-800 mb-4 tracking-tighter">
 							Why Choose NomNom?
 						</h2>
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="flex items-start gap-3">
-								<span className="text-green-500 text-xl">
+								<span className="text-blue-500 text-xl">
 									✓
 								</span>
 								<div>
@@ -64,7 +64,7 @@ export default function About() {
 								</div>
 							</div>
 							<div className="flex items-start gap-3">
-								<span className="text-green-500 text-xl">
+								<span className="text-blue-500 text-xl">
 									✓
 								</span>
 								<div>
@@ -77,7 +77,7 @@ export default function About() {
 								</div>
 							</div>
 							<div className="flex items-start gap-3">
-								<span className="text-green-500 text-xl">
+								<span className="text-blue-500 text-xl">
 									✓
 								</span>
 								<div>
@@ -90,7 +90,7 @@ export default function About() {
 								</div>
 							</div>
 							<div className="flex items-start gap-3">
-								<span className="text-green-500 text-xl">
+								<span className="text-blue-500 text-xl">
 									✓
 								</span>
 								<div>

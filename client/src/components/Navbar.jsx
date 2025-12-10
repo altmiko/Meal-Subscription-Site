@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import Logo from './Logo';
 
 export default function Navbar() {
 	const [isOpen, setIsOpen] = useState(false);
@@ -75,14 +76,10 @@ export default function Navbar() {
 							<Link
 								to="/"
 								onClick={handleNavClick}
-								className="flex gap-2 font-bold text-gray-800 items-center hover:text-green-500 transition-colors cursor-pointer"
+								className="flex gap-2 font-bold text-gray-800 items-center hover:text-blue-500 transition-colors cursor-pointer"
 							>
-								<div className="w-8 h-8 bg-gradient-to-br from-green-300 to-emerald-400 rounded-lg flex items-center justify-center">
-									<span className="text-white font-bold text-sm">
-										N
-									</span>
-								</div>
-								<span className="text-xl">NomNom</span>
+								<Logo />
+								<span className="text-xl tracking-tighter">NomNom</span>
 							</Link>
 						</div>
 
@@ -95,13 +92,13 @@ export default function Navbar() {
 									onClick={handleNavClick}
 									className={`text-sm font-medium transition-all duration-200 relative cursor-pointer ${
 										activePath === link.path
-											? 'text-green-500'
-											: 'text-gray-700 hover:text-green-500'
+											? 'text-blue-500'
+											: 'text-gray-700 hover:text-blue-500'
 									}`}
 								>
 									{link.name}
 									{activePath === link.path && (
-										<span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-green-500 rounded-full"></span>
+										<span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-blue-500 rounded-full"></span>
 									)}
 								</Link>
 							))}
@@ -115,7 +112,7 @@ export default function Navbar() {
 										onClick={handleDashboardClick}
 										className="flex items-center gap-2 px-4 py-2.5 rounded-full font-semibold hover:bg-gray-100 transition-all text-sm cursor-pointer text-gray-700"
 									>
-										<div className="w-8 h-8 bg-gradient-to-br from-green-300 to-emerald-400 rounded-full flex items-center justify-center">
+										<div className="w-8 h-8 bg-gradient-to-br from-blue-300 to-indigo-400 rounded-full flex items-center justify-center">
 											<span className="text-white font-bold text-xs">
 												{user.name
 													?.charAt(0)
@@ -130,7 +127,7 @@ export default function Navbar() {
 							) : (
 								<button
 									onClick={() => navigate('/login')}
-									className="bg-gradient-to-r from-green-300 to-emerald-400 text-white px-6 py-2.5 rounded-full font-semibold hover:from-green-400 hover:to-emerald-500 transition-all shadow-md hover:shadow-lg text-sm cursor-pointer"
+									className="bg-gradient-to-r from-blue-400 to-indigo-500 text-white px-6 py-2.5 rounded-full font-semibold hover:from-blue-500 hover:to-indigo-600 transition-all shadow-md hover:shadow-lg text-sm cursor-pointer"
 								>
 									Login / Register
 								</button>
@@ -164,7 +161,7 @@ export default function Navbar() {
 										onClick={handleNavClick}
 										className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
 											activePath === link.path
-												? 'bg-green-50 text-green-500 border-l-4 border-green-500'
+												? 'bg-blue-50 text-blue-500 border-l-4 border-blue-500'
 												: 'text-gray-700 hover:bg-gray-50'
 										}`}
 									>
@@ -179,7 +176,7 @@ export default function Navbar() {
 											}}
 											className="w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all cursor-pointer flex items-center gap-2"
 										>
-											<div className="w-8 h-8 bg-gradient-to-br from-green-300 to-emerald-400 rounded-full flex items-center justify-center">
+											<div className="w-8 h-8 bg-gradient-to-br from-blue-300 to-indigo-400 rounded-full flex items-center justify-center">
 												<span className="text-white font-bold text-xs">
 													{user.name
 														?.charAt(0)
@@ -195,7 +192,7 @@ export default function Navbar() {
 											navigate('/login');
 											handleNavClick();
 										}}
-										className="w-full bg-gradient-to-r from-green-300 to-emerald-400 text-white px-4 py-3 rounded-lg text-sm font-semibold hover:from-green-400 hover:to-emerald-500 transition-all mt-2 shadow-md cursor-pointer"
+										className="w-full bg-gradient-to-r from-blue-400 to-indigo-500 text-white px-4 py-3 rounded-lg text-sm font-semibold hover:from-blue-500 hover:to-indigo-600 transition-all mt-2 shadow-md cursor-pointer"
 									>
 										Login / Register
 									</button>

@@ -7,6 +7,7 @@ import connectDB from './db/connection.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/authRoutes.js';
 import restaurantRoutes from './routes/restaurantRoutes.js';
+import menuRoutes from './routes/menuRoutes.js';
 
 // Get the directory name of the current module
 const __filename = fileURLToPath(import.meta.url);
@@ -36,7 +37,7 @@ app.get('/', (req, res) => {
 	res.send('Backend API is running!');
 });
 app.use('/api/restaurants', restaurantRoutes);
-
+app.use('/api/restaurants', menuRoutes);
 app.use('/api/auth', authRoutes);
 
 // Error handler middleware (must be last)
