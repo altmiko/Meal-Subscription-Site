@@ -13,10 +13,10 @@ const generateToken = (id) => {
 };
 
 export const register = async (req, res) => {
-    try {
-        console.log('Registration payload:', req.body); // Add this to debug
-        
-        const {
+	try {
+		console.log('Registration payload:', req.body); // Add this to debug
+
+		const {
 			name,
 			email,
 			phone,
@@ -49,32 +49,49 @@ export const register = async (req, res) => {
 		}
 
 		const role = incomingRole || 'customer';
-		const userData = { name, email, phone, password, role };
 
-		// Role-specific assignments
+		// Build userData object explicitly based on role to prevent extra fields
+		let userData;
+		
 		if (role === 'restaurant') {
-			// Use the name field as restaurantName for restaurants
-			userData.restaurantName = name.trim();
+			// Restaurant: base fields + restaurant-specific fields only
+			userData = {
+				name,
+				email,
+				phone,
+				password,
+				role: 'restaurant',
+				rating: 0,
+				totalRatings: 0,
+				isOpen: true,
+			};
 			if (location) userData.location = location;
-			if (Array.isArray(cuisineTypes))
+			if (Array.isArray(cuisineTypes) && cuisineTypes.length > 0) {
 				userData.cuisineTypes = cuisineTypes;
-			if (openingHours) userData.openingHours = openingHours;
-			if (Array.isArray(menu)) userData.menu = menu;
-
-			// Defaults for restaurants
-			userData.rating = 0;
-			userData.totalRatings = 0;
-			userData.isOpen = true;
+			}
+			if (Array.isArray(menu) && menu.length > 0) {
+				userData.menu = menu;
+			}
 		} else if (role === 'deliveryStaff') {
+			// DeliveryStaff: base fields + vehicleType only
+			userData = {
+				name,
+				email,
+				phone,
+				password,
+				role: 'deliveryStaff',
+			};
 			if (vehicleType) userData.vehicleType = vehicleType;
-			if (licenseNumber) userData.licenseNumber = licenseNumber;
-			if (currentLocation) userData.currentLocation = currentLocation;
-
-			// Defaults for delivery staff
-			userData.isAvailable = true;
-			userData.totalDeliveries = 0;
+		} else {
+			// Customer: only base fields, no additional fields
+			userData = {
+				name,
+				email,
+				phone,
+				password,
+				role: 'customer',
+			};
 		}
-		// Customer role: only base fields, no additional fields needed
 
 		const user = await User.create(userData);
 

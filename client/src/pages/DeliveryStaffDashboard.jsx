@@ -53,7 +53,7 @@ export default function DeliveryStaffDashboard() {
 	}
 
 	return (
-		<div className="min-h-screen bg-white pt-24">
+		<div className="min-h-screen bg-white pt-8">
 			<div className="max-w-7xl mx-auto px-4 py-8">
 				{/* Header */}
 				<div className="bg-gray-50 rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
@@ -62,7 +62,9 @@ export default function DeliveryStaffDashboard() {
 							<h1 className="text-3xl font-semibold text-gray-900 mb-2">
 								Welcome, {user?.name}!
 							</h1>
-							<p className="text-gray-600">Delivery Staff Dashboard</p>
+							<p className="text-gray-600">
+								Delivery Staff Dashboard
+							</p>
 						</div>
 						<button
 							onClick={handleLogout}
@@ -81,7 +83,8 @@ export default function DeliveryStaffDashboard() {
 								Availability Status
 							</h2>
 							<p className="text-gray-600">
-								Toggle your availability to receive delivery requests
+								Toggle your availability to receive delivery
+								requests
 							</p>
 						</div>
 						<button
@@ -97,19 +100,29 @@ export default function DeliveryStaffDashboard() {
 				<div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
 					<div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
 						<div className="text-4xl mb-3">📦</div>
-						<div className="text-3xl font-semibold text-gray-900 mb-1">0</div>
-						<div className="text-sm text-gray-600">Total Deliveries</div>
+						<div className="text-3xl font-semibold text-gray-900 mb-1">
+							0
+						</div>
+						<div className="text-sm text-gray-600">
+							Total Deliveries
+						</div>
 					</div>
 
 					<div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
 						<div className="text-4xl mb-3">🚚</div>
-						<div className="text-3xl font-semibold text-gray-900 mb-1">0</div>
-						<div className="text-sm text-gray-600">Active Deliveries</div>
+						<div className="text-3xl font-semibold text-gray-900 mb-1">
+							0
+						</div>
+						<div className="text-sm text-gray-600">
+							Active Deliveries
+						</div>
 					</div>
 
 					<div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
 						<div className="text-4xl mb-3">⭐</div>
-						<div className="text-3xl font-semibold text-gray-900 mb-1">0.0</div>
+						<div className="text-3xl font-semibold text-gray-900 mb-1">
+							0.0
+						</div>
 						<div className="text-sm text-gray-600">Rating</div>
 					</div>
 				</div>
@@ -141,15 +154,21 @@ export default function DeliveryStaffDashboard() {
 					<div className="space-y-3">
 						<div>
 							<span className="text-gray-600">Name:</span>
-							<span className="ml-2 font-semibold">{user?.name}</span>
+							<span className="ml-2 font-semibold">
+								{user?.name}
+							</span>
 						</div>
 						<div>
 							<span className="text-gray-600">Email:</span>
-							<span className="ml-2 font-semibold">{user?.email}</span>
+							<span className="ml-2 font-semibold">
+								{user?.email}
+							</span>
 						</div>
 						<div>
 							<span className="text-gray-600">Phone:</span>
-							<span className="ml-2 font-semibold">{user?.phone}</span>
+							<span className="ml-2 font-semibold">
+								{user?.phone}
+							</span>
 						</div>
 						<div>
 							<span className="text-gray-600">Vehicle Type:</span>
@@ -163,4 +182,3 @@ export default function DeliveryStaffDashboard() {
 		</div>
 	);
 }
-

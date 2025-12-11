@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { User } from './models/User.js';
 
@@ -6,24 +7,21 @@ dotenv.config();
 
 async function seedRestaurants() {
 	try {
-		const uri = process.env.ATLAS_URI;
-		if (!uri) throw new Error('ATLAS_URI is missing in .env');
+		await mongoose.connect(process.env.ATLAS_URI);
 
-		await mongoose.connect(uri);
-		console.log('🌿 Connected to MongoDB Atlas');
-
-		// Clear old restaurants
 		await User.deleteMany({ role: 'restaurant' });
-		console.log('🗑 Cleared previous restaurant documents');
+
+		const rawPassword = 'password';
+		const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
 		const restaurants = [
 			{
 				name: 'Dhaka Daily Kitchen',
 				email: 'dhakakitchen@example.com',
 				phone: '01710000001',
-				password: 'password',
+				password: hashedPassword,
 				role: 'restaurant',
-				cuisineTypes: ['bangladeshi'],
+				cuisineTypes: ['Bangladeshi'],
 				isOpen: true,
 				location: {
 					house: '12',
@@ -36,9 +34,9 @@ async function seedRestaurants() {
 				name: 'Bengal Heat Meals',
 				email: 'bengalheat@example.com',
 				phone: '01710000002',
-				password: 'password',
+				password: hashedPassword,
 				role: 'restaurant',
-				cuisineTypes: ['bangladeshi', 'fusion'],
+				cuisineTypes: ['Bangladeshi', 'Fusion'],
 				isOpen: true,
 				location: {
 					house: '22',
@@ -51,9 +49,9 @@ async function seedRestaurants() {
 				name: 'Spice Route Express',
 				email: 'spiceroute@example.com',
 				phone: '01710000003',
-				password: 'password',
+				password: hashedPassword,
 				role: 'restaurant',
-				cuisineTypes: ['indian'],
+				cuisineTypes: ['Indian'],
 				isOpen: true,
 				location: {
 					house: '45',
@@ -66,9 +64,9 @@ async function seedRestaurants() {
 				name: 'Mediterraneo Fresh Box',
 				email: 'medfresh@example.com',
 				phone: '01710000004',
-				password: 'password',
+				password: hashedPassword,
 				role: 'restaurant',
-				cuisineTypes: ['italian', 'mediterranean'],
+				cuisineTypes: ['Italian', 'Mediterranean'],
 				isOpen: true,
 				location: {
 					house: '67',
@@ -81,9 +79,9 @@ async function seedRestaurants() {
 				name: 'Asian Bowl Factory',
 				email: 'asianbowl@example.com',
 				phone: '01710000005',
-				password: 'password',
+				password: hashedPassword,
 				role: 'restaurant',
-				cuisineTypes: ['thai', 'chinese'],
+				cuisineTypes: ['Thai', 'Chinese'],
 				isOpen: true,
 				location: {
 					house: '15',
@@ -96,9 +94,9 @@ async function seedRestaurants() {
 				name: 'Urban Fit Meal Prep',
 				email: 'urbanfit@example.com',
 				phone: '01710000006',
-				password: 'password',
+				password: hashedPassword,
 				role: 'restaurant',
-				cuisineTypes: ['healthy', 'fusion'],
+				cuisineTypes: ['Healthy', 'Fusion'],
 				isOpen: true,
 				location: {
 					house: '88',
@@ -109,12 +107,12 @@ async function seedRestaurants() {
 			},
 		];
 
-		await User.insertMany(dataWithUserFields);
-		console.log('✅ Inserted 10 restaurant dummy records');
+		await User.insertMany(restaurants);
 
+		console.log('✅ Restaurants inserted with hashed passwords');
 		process.exit(0);
 	} catch (err) {
-		console.error('❌ Error seeding restaurants:', err);
+		console.error('❌ Seeding error:', err);
 		process.exit(1);
 	}
 }

@@ -10,17 +10,24 @@ import RestaurantDashboard from './pages/RestaurantDashboard';
 import DeliveryStaffDashboard from './pages/DeliveryStaffDashboard';
 import KitchenProfile from './pages/KitchenProfile';
 import ManageMenu from './pages/ManageMenu';
+import ScrollToTop from './components/ScrollToTop';
+import MenuOfTheDay from './pages/MenuOfTheDay';
 
 function App() {
 	return (
 		<Router>
 			<div className="min-h-screen">
 				<Navbar />
+				<ScrollToTop />
 				<Routes>
 					<Route path="/" element={<Home />} />
 					<Route path="/about" element={<About />} />
 					<Route path="/restaurants" element={<Restaurants />} />
-					<Route path="/restaurants/:id" element={<KitchenProfile />} />
+					<Route
+						path="/restaurants/:id"
+						element={<KitchenProfile />}
+					/>
+					<Route path="/menu-of-the-day" element={<MenuOfTheDay />} />
 					<Route path="/login" element={<Login />} />
 					<Route path="/register" element={<Register />} />
 					<Route

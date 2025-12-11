@@ -17,6 +17,7 @@ export default function Register() {
 		locationRoad: '',
 		locationArea: '',
 		locationCity: '',
+		restaurantImageUrl: '',
 	});
 	const [error, setError] = useState('');
 	const [loading, setLoading] = useState(false);
@@ -100,6 +101,9 @@ export default function Register() {
 					area: formData.locationArea,
 					city: formData.locationCity,
 				};
+				if (formData.restaurantImageUrl) {
+					payload.imageUrl = formData.restaurantImageUrl;
+				}
 			}
 
 			const response = await axiosInstance.post('/api/auth/register', payload);
@@ -334,6 +338,27 @@ export default function Register() {
 								<h3 className="font-semibold text-gray-900">
 									Restaurant Location
 								</h3>
+
+								<div>
+									<label
+										htmlFor="restaurantImageUrl"
+										className="block text-sm font-medium text-gray-700 mb-2"
+									>
+										Restaurant Image URL (optional)
+									</label>
+									<input
+										type="url"
+										id="restaurantImageUrl"
+										name="restaurantImageUrl"
+										value={formData.restaurantImageUrl}
+										onChange={handleChange}
+										className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
+										placeholder="https://example.com/restaurant.jpg"
+									/>
+									<p className="mt-1 text-xs text-gray-600">
+										Used as the cover image for your restaurant profile.
+									</p>
+								</div>
 
 								<div>
 									<label

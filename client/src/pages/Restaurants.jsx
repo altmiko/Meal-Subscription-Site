@@ -9,6 +9,8 @@ export default function Restaurants() {
 	const [error, setError] = useState(null);
 	const [searchTerm, setSearchTerm] = useState('');
 	const [selectedCuisine, setSelectedCuisine] = useState('');
+	const fallbackImage =
+		'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1200';
 
 	useEffect(() => {
 		fetchRestaurants();
@@ -199,10 +201,21 @@ export default function Restaurants() {
 									navigate(`/restaurants/${restaurant._id}`)
 								}
 							>
-								{/* Restaurant Image Placeholder */}
-								<div className="h-48 bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center relative overflow-hidden">
-									<span className="text-6xl z-10 text-emerald-800">🍽️</span>
-									<div className="absolute inset-0 bg-emerald-900/5 opacity-0 hover:opacity-100 transition-opacity"></div>
+								{/* Restaurant Image */}
+								<div className="h-48 relative overflow-hidden bg-gray-100">
+									<img
+										src={
+											restaurant.imageUrl ||
+											restaurant.restaurantImageUrl ||
+											fallbackImage
+										}
+										alt={restaurant.restaurantName || restaurant.name || 'Restaurant'}
+										className="h-full w-full object-cover transition duration-500 ease-out hover:scale-105"
+										onError={(e) => {
+											e.currentTarget.src = fallbackImage;
+										}}
+									/>
+									<div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
 								</div>
 
 								{/* Restaurant Info */}

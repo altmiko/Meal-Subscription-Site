@@ -1,11 +1,12 @@
 import express from 'express';
 import { protect } from '../middleware/authMiddleware.js';
 import {
-    createMenuItem,
-    getMenuForRestaurant,
-    getMenuByRestaurantId,
-    updateMenuItem,
-    deleteMenuItem,
+	createMenuItem,
+	getMenuForRestaurant,
+	getMenuByRestaurantId,
+	updateMenuItem,
+	deleteMenuItem,
+	getMenuOfTheDay,
 } from '../controllers/menuController.js';
 
 const router = express.Router();
@@ -15,8 +16,7 @@ router.post('/', protect, createMenuItem);
 router.get('/', protect, getMenuForRestaurant);
 router.put('/:id', protect, updateMenuItem);
 router.delete('/:id', protect, deleteMenuItem);
-
-// Public endpoint to fetch menu by restaurant id
+router.get('/menu-of-the-day', getMenuOfTheDay);
 router.get('/restaurant/:restaurantId', getMenuByRestaurantId);
 
 export default router;
