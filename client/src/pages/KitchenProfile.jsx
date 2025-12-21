@@ -25,10 +25,27 @@ export default function KitchenProfile() {
 	const [error, setError] = useState(null);
 	const [selectedItem, setSelectedItem] = useState(null);
 	const [showItemModal, setShowItemModal] = useState(false);
+	const [user, setUser] = useState(null);
 	const [cart, setCart] = useState(() => {
 		const saved = localStorage.getItem('cart');
 		return saved ? JSON.parse(saved) : [];
 	});
+
+	// Check user role
+	useEffect(() => {
+		const userData = localStorage.getItem('user');
+		if (userData) {
+			try {
+				const parsedUser = JSON.parse(userData);
+				setUser(parsedUser);
+			} catch (err) {
+				console.error('Error parsing user data:', err);
+			}
+		}
+	}, []);
+
+	// Check if user is a customer
+	const isCustomer = user && user.role === 'customer';
 
 	const [reviews, setReviews] = useState([]);
 	const [reviewRating, setReviewRating] = useState(5);
@@ -302,12 +319,14 @@ export default function KitchenProfile() {
 						{kitchen.description ||
 							'Serving fresh and delicious meals with passion.'}
 					</p>
-					<Link
-						to="/cart"
-						className="inline-block mt-4 bg-white text-emerald-700 px-5 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
-					>
-						🛒 View Cart ({cart.length})
-					</Link>
+					{isCustomer && (
+						<Link
+							to="/cart"
+							className="inline-block mt-4 bg-white text-emerald-700 px-5 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
+						>
+							🛒 View Cart ({cart.length})
+						</Link>
+					)}
 				</div>
 			</section>
 
@@ -382,13 +401,14 @@ export default function KitchenProfile() {
 							items={groupedMenuItems[day]}
 							openItemModal={openItemModal}
 							addToCart={addToCart}
+							isCustomer={isCustomer}
 						/>
 					))
 				)}
 			</section>
 
 			{/* Add All Buttons */}
-			{menuItems.length > 0 && (
+			{menuItems.length > 0 && isCustomer && (
 				<section className="max-w-7xl mx-auto px-4 mb-12">
 					<div className="flex flex-col sm:flex-row gap-4 w-full">
 						<button
@@ -428,6 +448,7 @@ export default function KitchenProfile() {
 					item={selectedItem}
 					closeModal={closeItemModal}
 					addToCart={addToCart}
+					isCustomer={isCustomer}
 				/>
 			)}
 
@@ -438,7 +459,7 @@ export default function KitchenProfile() {
 }
 
 // Day Menu Component
-const DayMenu = ({ day, items, openItemModal, addToCart }) => {
+const DayMenu = ({ day, items, openItemModal, addToCart, isCustomer }) => {
 	const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 	if (!items.lunch.length && !items.dinner.length)
 		return (
@@ -465,6 +486,7 @@ const DayMenu = ({ day, items, openItemModal, addToCart }) => {
 									item={item}
 									openItemModal={openItemModal}
 									addToCart={addToCart}
+									isCustomer={isCustomer}
 								/>
 							))}
 						</div>
@@ -482,6 +504,7 @@ const DayMenu = ({ day, items, openItemModal, addToCart }) => {
 									item={item}
 									openItemModal={openItemModal}
 									addToCart={addToCart}
+									isCustomer={isCustomer}
 								/>
 							))}
 						</div>
@@ -493,7 +516,7 @@ const DayMenu = ({ day, items, openItemModal, addToCart }) => {
 };
 
 // Menu Item Card
-const MenuItemCard = ({ item, openItemModal, addToCart }) => (
+const MenuItemCard = ({ item, openItemModal, addToCart, isCustomer }) => (
 	<div
 		onClick={() => openItemModal(item)}
 		className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1 flex flex-col h-full cursor-pointer"
@@ -523,21 +546,27 @@ const MenuItemCard = ({ item, openItemModal, addToCart }) => (
 					</p>
 				)}
 			</div>
-			<button
-				onClick={(e) => {
-					e.stopPropagation();
-					addToCart(item);
-				}}
-				className="bg-emerald-600 text-white w-full py-3 rounded-lg font-semibold shadow-sm hover:-translate-y-0.5 hover:bg-emerald-700 transition-all duration-300 mt-auto"
-			>
-				Add to Cart
-			</button>
+			{isCustomer ? (
+				<button
+					onClick={(e) => {
+						e.stopPropagation();
+						addToCart(item);
+					}}
+					className="bg-emerald-600 text-white w-full py-3 rounded-lg font-semibold shadow-sm hover:-translate-y-0.5 hover:bg-emerald-700 transition-all duration-300 mt-auto"
+				>
+					Add to Cart
+				</button>
+			) : (
+				<div className="bg-gray-300 text-gray-500 w-full py-3 rounded-lg font-semibold text-center mt-auto">
+					Only customers can order
+				</div>
+			)}
 		</div>
 	</div>
 );
 
 // Item Modal
-const ItemModal = ({ item, closeModal, addToCart }) => (
+const ItemModal = ({ item, closeModal, addToCart, isCustomer }) => (
 	<div
 		className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4"
 		onClick={closeModal}
@@ -579,15 +608,21 @@ const ItemModal = ({ item, closeModal, addToCart }) => (
 					</ul>
 				)}
 				<div className="mt-6 flex flex-col sm:flex-row gap-3">
-					<button
-						onClick={() => {
-							addToCart(item);
-							closeModal();
-						}}
-						className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition font-semibold"
-					>
-						Add to Cart
-					</button>
+					{isCustomer ? (
+						<button
+							onClick={() => {
+								addToCart(item);
+								closeModal();
+							}}
+							className="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition font-semibold"
+						>
+							Add to Cart
+						</button>
+					) : (
+						<div className="flex-1 bg-gray-300 text-gray-500 px-4 py-2 rounded-lg font-semibold text-center">
+							Only customers can order
+						</div>
+					)}
 				</div>
 			</div>
 		</div>

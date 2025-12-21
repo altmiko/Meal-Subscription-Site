@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import FloatingCart from './components/FloatingCart';
 import Home from './pages/Home';
 import About from './pages/About';
 import Restaurants from './pages/Restaurants';
@@ -16,10 +17,10 @@ import KitchenProfile from './pages/KitchenProfile';
 import ManageMenu from './pages/ManageMenu';
 import CartPage from './pages/CartPage';
 import OrdersPage from './pages/Orders';
-import CustomerOrders from "./pages/CustomerOrders";
+import CustomerOrders from './pages/CustomerOrders';
 import ReviewSection from './pages/ReviewSection';
 import ViewReview from './pages/ViewReview';
-import Wallet from './pages/Wallet'; 
+import Wallet from './pages/Wallet';
 import ReferralRewards from './pages/ReferralRewards';
 
 function App() {
@@ -27,11 +28,15 @@ function App() {
 		<Router>
 			<div className="min-h-screen">
 				<Navbar />
+				<FloatingCart />
 				<Routes>
 					<Route path="/" element={<Home />} />
 					<Route path="/about" element={<About />} />
 					<Route path="/restaurants" element={<Restaurants />} />
-					<Route path="/restaurants/:id" element={<KitchenProfile />} />
+					<Route
+						path="/restaurants/:id"
+						element={<KitchenProfile />}
+					/>
 					<Route path="/login" element={<Login />} />
 					<Route path="/register" element={<Register />} />
 					<Route
@@ -46,43 +51,42 @@ function App() {
 						path="/dashboard/delivery-staff"
 						element={<DeliveryStaffDashboard />}
 					/>
-					<Route path="/dashboard/admin" element={<AdminDashboard />} />
+					<Route
+						path="/dashboard/admin"
+						element={<AdminDashboard />}
+					/>
 					<Route
 						path="/restaurant/manage-menu"
 						element={<ManageMenu />}
 					/>
 
-					<Route 
-						path="/cart" 
-						element={<CartPage />} />
+					<Route path="/cart" element={<CartPage />} />
 
-					<Route 
-						path="/orders" 
-						element={<OrdersPage />} />
-					<Route 
-						path="/my-orders" 
-						element={<CustomerOrders />} />
-					
-					<Route 
-						path="/restaurants/:id/add-review" 
-						element={<ReviewSection />} />
+					<Route path="/orders" element={<OrdersPage />} />
+					<Route path="/my-orders" element={<CustomerOrders />} />
+
+					<Route
+						path="/restaurants/:id/add-review"
+						element={<ReviewSection />}
+					/>
 					<Route
 						path="/restaurants/:id/reviews"
-						element={<ViewReview />} />
+						element={<ViewReview />}
+					/>
 					<Route
 						path="/delivery-staff/:id/add-review/:orderId"
-						element={<DeliveryStaffReviewSection />} />
+						element={<DeliveryStaffReviewSection />}
+					/>
 					<Route
 						path="/delivery-staff/:id/reviews"
-						element={<DeliveryStaffViewReview />} />
+						element={<DeliveryStaffViewReview />}
+					/>
 					<Route
 						path="/delivery-staff/my-deliveries"
-						element={<DeliveryStaffDeliveries />} />
-					<Route
-						path="/wallet"
-						element={<Wallet />} />
+						element={<DeliveryStaffDeliveries />}
+					/>
+					<Route path="/wallet" element={<Wallet />} />
 					<Route path="/referrals" element={<ReferralRewards />} />
-
 				</Routes>
 			</div>
 		</Router>
