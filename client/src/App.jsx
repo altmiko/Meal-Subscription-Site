@@ -8,13 +8,19 @@ import Register from './pages/Register';
 import CustomerDashboard from './pages/CustomerDashboard';
 import RestaurantDashboard from './pages/RestaurantDashboard';
 import DeliveryStaffDashboard from './pages/DeliveryStaffDashboard';
+import DeliveryStaffReviewSection from './pages/DeliveryStaffReviewSection';
+import DeliveryStaffViewReview from './pages/DeliveryStaffViewReview';
+import DeliveryStaffDeliveries from './pages/DeliveryStaffDeliveries';
+import AdminDashboard from './pages/AdminDashboard';
 import KitchenProfile from './pages/KitchenProfile';
 import ManageMenu from './pages/ManageMenu';
 import CartPage from './pages/CartPage';
 import OrdersPage from './pages/Orders';
 import CustomerOrders from "./pages/CustomerOrders";
 import ReviewSection from './pages/ReviewSection';
-import ViewReview from './pages/ViewReview'; 
+import ViewReview from './pages/ViewReview';
+import Wallet from './pages/Wallet'; 
+import ReferralRewards from './pages/ReferralRewards';
 
 function App() {
 	return (
@@ -40,6 +46,7 @@ function App() {
 						path="/dashboard/delivery-staff"
 						element={<DeliveryStaffDashboard />}
 					/>
+					<Route path="/dashboard/admin" element={<AdminDashboard />} />
 					<Route
 						path="/restaurant/manage-menu"
 						element={<ManageMenu />}
@@ -59,9 +66,22 @@ function App() {
 					<Route 
 						path="/restaurants/:id/add-review" 
 						element={<ReviewSection />} />
-					<Route 
-						path="/restaurants/:id/reviews" 
+					<Route
+						path="/restaurants/:id/reviews"
 						element={<ViewReview />} />
+					<Route
+						path="/delivery-staff/:id/add-review/:orderId"
+						element={<DeliveryStaffReviewSection />} />
+					<Route
+						path="/delivery-staff/:id/reviews"
+						element={<DeliveryStaffViewReview />} />
+					<Route
+						path="/delivery-staff/my-deliveries"
+						element={<DeliveryStaffDeliveries />} />
+					<Route
+						path="/wallet"
+						element={<Wallet />} />
+					<Route path="/referrals" element={<ReferralRewards />} />
 
 				</Routes>
 			</div>

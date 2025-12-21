@@ -36,6 +36,12 @@ export const protect = async (req, res, next) => {
 				message: 'User not found.',
 			});
 		}
+		if (user.isActive === false) {
+			return res.status(403).json({
+				success: false,
+				message: 'Account is disabled.',
+			});
+		}
 
 		req.user = user;
 		next();

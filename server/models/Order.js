@@ -10,7 +10,7 @@ const orderItemSchema = new mongoose.Schema({
 
 const orderSchema = new mongoose.Schema(
   {
-    restaurantId: { type: mongoose.Schema.Types.ObjectId, ref: "Restaurant", required: true },
+    restaurantId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     items: [orderItemSchema],
     total: { type: Number, required: true },

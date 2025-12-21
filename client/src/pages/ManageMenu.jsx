@@ -157,8 +157,19 @@ export default function ManageMenu() {
         try {
             await axiosInstance.delete(`/api/menu/${id}`);
             loadItems();
-        } catch (err) {
+        } catch (_err) {
+            console.error(_err);
             alert('Failed to delete item');
+        }
+    };
+
+    const handleClearAdminComment = async (id) => {
+        try {
+            await axiosInstance.put(`/api/menu/${id}`, { clearAdminComment: true });
+            loadItems();
+        } catch (err) {
+            console.error(err);
+            alert(err.response?.data?.message || err.message || 'Failed to clear admin comment');
         }
     };
 
@@ -372,6 +383,26 @@ export default function ManageMenu() {
                                                 {item.ingredients && item.ingredients.length > 0 && (
                                                     <div className="text-xs text-gray-500 mt-1">Ingredients: {Array.isArray(item.ingredients) ? item.ingredients.join(', ') : item.ingredients}</div>
                                                 )}
+                                                {item.adminComment ? (
+                                                    <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                                                        <div className="font-semibold">Admin comment</div>
+                                                        <div className="mt-1 whitespace-pre-wrap">{item.adminComment}</div>
+                                                        {item.adminCommentedAt ? (
+                                                            <div className="mt-1 text-[11px] text-amber-800">
+                                                                {new Date(item.adminCommentedAt).toLocaleString()}
+                                                            </div>
+                                                        ) : null}
+                                                        <div className="mt-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleClearAdminComment(item._id)}
+                                                                className="rounded-md border border-amber-300 bg-white px-2 py-1 text-[11px] font-semibold text-amber-900 hover:bg-amber-100 transition"
+                                                            >
+                                                                Mark done
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : null}
                                             </div>
                                         </div>
 

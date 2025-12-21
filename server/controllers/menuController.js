@@ -119,7 +119,9 @@ export const getMenuForRestaurant = async (req, res) => {
 export const getMenuByRestaurantId = async (req, res) => {
     try {
         const restaurantId = req.params.restaurantId;
-        const items = await MenuItem.find({ restaurant: restaurantId }).sort({ day: 1 });
+        const items = await MenuItem.find({ restaurant: restaurantId })
+            .select('-adminComment -adminCommentedAt -adminCommentedBy')
+            .sort({ day: 1 });
         res.json({ success: true, data: items });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -137,7 +139,7 @@ export const updateMenuItem = async (req, res) => {
         if (!item) return res.status(404).json({ success: false, message: 'Menu item not found' });
         if (item.restaurant.toString() !== userId) return res.status(403).json({ success: false, message: 'Not allowed' });
 
-        const { name, description, price, calories, ingredients, day, mealType, refetchImage } = req.body;
+        const { name, description, price, calories, ingredients, day, mealType, refetchImage, clearAdminComment } = req.body;
 
         if (name !== undefined) item.name = name;
         if (description !== undefined) item.description = description;
@@ -156,6 +158,12 @@ export const updateMenuItem = async (req, res) => {
 
         if (refetchImage === true || (name && req.body.refetchImage !== false)) {
             item.imageUrl = await fetchPexelsImage(item.name);
+        }
+
+        if (clearAdminComment === true) {
+            item.adminComment = '';
+            item.adminCommentedAt = null;
+            item.adminCommentedBy = null;
         }
 
         item.updatedAt = new Date();

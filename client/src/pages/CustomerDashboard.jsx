@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../api/axios';
+import MealCalendar from '../components/MealCalendar';
+import SubscriptionManager from '../components/SubscriptionManager';
 
 export default function CustomerDashboard() {
   const navigate = useNavigate();
@@ -8,6 +10,7 @@ export default function CustomerDashboard() {
   const [loading, setLoading] = useState(true);
   const [favorites, setFavorites] = useState([]);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [activeTab, setActiveTab] = useState('calendar'); // 'calendar' or 'subscriptions'
 
   // ------------------ Load user ------------------
   useEffect(() => {
@@ -86,6 +89,40 @@ export default function CustomerDashboard() {
           setShowFavorites={setShowFavorites}
         />
 
+        {/* Meal Calendar & Subscriptions Tabs */}
+        <div className="mb-6">
+          <div className="border-b border-gray-200 mb-4">
+            <nav className="flex gap-4">
+              <button
+                onClick={() => setActiveTab('calendar')}
+                className={`px-4 py-2 font-semibold border-b-2 transition ${
+                  activeTab === 'calendar'
+                    ? 'border-emerald-600 text-emerald-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                📅 Meal Calendar
+              </button>
+              <button
+                onClick={() => setActiveTab('subscriptions')}
+                className={`px-4 py-2 font-semibold border-b-2 transition ${
+                  activeTab === 'subscriptions'
+                    ? 'border-emerald-600 text-emerald-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                📦 Manage Subscriptions
+              </button>
+            </nav>
+          </div>
+
+          {activeTab === 'calendar' ? (
+            <MealCalendar />
+          ) : (
+            <SubscriptionManager />
+          )}
+        </div>
+
         {/* Favorites List */}
         {showFavorites && <FavoritesList favorites={favorites} navigate={navigate} />}
 
@@ -115,7 +152,7 @@ const Header = ({ user, onLogout }) => (
 );
 
 const QuickActions = ({ navigate, showFavorites, setShowFavorites }) => (
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
     <ActionCard
       icon="🍽️"
       title="Browse Restaurants"
@@ -129,10 +166,22 @@ const QuickActions = ({ navigate, showFavorites, setShowFavorites }) => (
       onClick={() => navigate('/my-orders')}
     />
     <ActionCard
+      icon="💰"
+      title="Wallet & Payments"
+      desc="Recharge and view transactions"
+      onClick={() => navigate('/wallet')}
+    />
+    <ActionCard
       icon="❤️"
       title="Favorites"
       desc="Your favorite restaurants"
       onClick={() => setShowFavorites(!showFavorites)}
+    />
+    <ActionCard
+      icon="🎁"
+      title="Referrals & Rewards"
+      desc="Share a code and earn wallet credits"
+      onClick={() => navigate('/referrals')}
     />
   </div>
 );

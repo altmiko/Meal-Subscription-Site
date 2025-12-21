@@ -10,10 +10,27 @@ const CartPage = () => {
     return saved ? JSON.parse(saved) : [];
   });
   const [loading, setLoading] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(null);
+  const [walletLoading, setWalletLoading] = useState(true);
 
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
+
+  // Fetch wallet balance
+  useEffect(() => {
+    const fetchWallet = async () => {
+      try {
+        const { data } = await axiosInstance.get("/api/wallet");
+        setWalletBalance(data.walletBalance || 0);
+      } catch (err) {
+        console.error("Failed to fetch wallet:", err);
+      } finally {
+        setWalletLoading(false);
+      }
+    };
+    fetchWallet();
+  }, []);
 
   const removeItem = (index) => setCart((prev) => prev.filter((_, i) => i !== index));
   const clearCart = () => setCart([]);
@@ -58,25 +75,67 @@ const CartPage = () => {
     if (cart.length === 0) return;
 
     const user = JSON.parse(localStorage.getItem("user"));
-    const token = localStorage.getItem("token");
-
     if (!user || user.role !== "customer") {
       alert("You must be logged in as a customer to place an order.");
       return;
     }
 
+    // Validate wallet balance
+    if (walletBalance !== null && walletBalance < totalPrice) {
+      const insufficient = totalPrice - walletBalance;
+      alert(
+        `Insufficient wallet balance. You need ${insufficient.toFixed(2)} BDT more.\n` +
+        `Current balance: ${walletBalance.toFixed(2)} BDT\n` +
+        `Total: ${totalPrice.toFixed(2)} BDT\n\n` +
+        `Please recharge your wallet from the dashboard.`
+      );
+      return;
+    }
+
+    if (!window.confirm(`Place order for ${totalPrice} BDT?`)) return;
+
     try {
       setLoading(true);
 
+      const orderPromises = [];
+      const errors = [];
+
       for (const item of cart) {
-        if (!item._id || !item.restaurant) continue;
+        // Validate required fields
+        if (!item._id) {
+          errors.push(`Item "${item.name || 'Unknown'}" is missing ID`);
+          continue;
+        }
+
+        const restaurantId = item.restaurant || item.restaurantId;
+        if (!restaurantId) {
+          errors.push(`Item "${item.name || 'Unknown'}" is missing restaurant ID`);
+          continue;
+        }
+
+        if (!item.price && item.price !== 0) {
+          errors.push(`Item "${item.name || 'Unknown'}" is missing price`);
+          continue;
+        }
+
+        // Get date - support both 'date' and 'deliveryDate' for backward compatibility
+        const itemDate = item.date || item.deliveryDate;
+        if (!itemDate) {
+          errors.push(`Item "${item.name || 'Unknown'}" is missing delivery date`);
+          continue;
+        }
 
         // Fixed date + selected delivery hour
-        const deliveryDateTime = new Date(item.date);
+        const deliveryDateTime = new Date(itemDate);
+        if (isNaN(deliveryDateTime.getTime())) {
+          errors.push(`Item "${item.name || 'Unknown'}" has invalid date`);
+          continue;
+        }
+
         deliveryDateTime.setHours(item.deliveryHour ?? (item.mealType === "lunch" ? 13 : 20), 0, 0, 0);
 
         const orderData = {
-          restaurantId: item.restaurant,
+          restaurantId,
           items: [
             {
               itemId: item._id,
@@ -87,19 +146,51 @@ const CartPage = () => {
             },
           ],
           total: (item.price || 0) * (item.quantity || 1),
-          deliveryDateTime,
+          deliveryDateTime: deliveryDateTime.toISOString(),
+          paymentMethod: "wallet",
         };
 
-        await axiosInstance.post("/api/orders", orderData, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        orderPromises.push(
+          axiosInstance.post("/api/orders", orderData).catch(err => {
+            errors.push(`Failed to order "${item.name || 'Unknown'}": ${err.response?.data?.message || err.message}`);
+            throw err;
+          })
+        );
       }
 
-      alert("All orders have been placed successfully!");
-      clearCart();
+      if (errors.length > 0 && orderPromises.length === 0) {
+        alert(`Cannot place orders:\n${errors.join('\n')}`);
+        return;
+      }
+
+      // Execute all orders
+      const results = await Promise.allSettled(orderPromises);
+      
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+
+      // Refresh wallet balance after checkout
+      const { data } = await axiosInstance.get("/api/wallet");
+      setWalletBalance(data.walletBalance || 0);
+
+      if (successful > 0) {
+        if (failed > 0) {
+          const errorMessages = errors.length > 0 ? errors.join('\n') : 'Some orders failed';
+          alert(`${successful} order(s) placed successfully. ${failed} order(s) failed.\n\n${errorMessages}`);
+        } else {
+          alert(`${successful} order(s) placed successfully!`);
+          clearCart();
+          // Notify other components
+          window.dispatchEvent(new Event('cartUpdated'));
+        }
+      } else {
+        const errorMessages = errors.length > 0 ? errors.join('\n') : 'All orders failed';
+        alert(`Failed to place orders:\n\n${errorMessages}`);
+      }
     } catch (err) {
       console.error("Checkout failed:", err.response?.data || err);
-      alert("Failed to place one or more orders. Please try again.");
+      const errorMsg = err.response?.data?.message || "Failed to place one or more orders. Please try again.";
+      alert(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -187,21 +278,49 @@ const CartPage = () => {
           })}
         </div>
 
-        <div className="mt-6 flex flex-col md:flex-row justify-between items-center gap-4">
-          <button
-            onClick={clearCart}
-            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition font-semibold"
-          >
-            Clear Cart
-          </button>
-          <p className="text-xl font-bold text-gray-900">Total: {totalPrice} BDT</p>
-          <button
-            onClick={handleCheckout}
-            disabled={loading}
-            className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition font-semibold disabled:opacity-50"
-          >
-            {loading ? "Placing Order..." : "Checkout"}
-          </button>
+        <div className="mt-6 space-y-4">
+          {/* Wallet Balance Display */}
+          {!walletLoading && (
+            <div className="bg-gray-50 rounded-lg p-4 border">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700 font-medium">Wallet Balance:</span>
+                <span className={`text-lg font-bold ${
+                  walletBalance >= totalPrice ? "text-green-600" : "text-red-600"
+                }`}>
+                  {walletBalance.toFixed(2)} BDT
+                </span>
+              </div>
+              {walletBalance < totalPrice && (
+                <p className="text-sm text-red-600 mt-2">
+                  ⚠️ Insufficient balance. You need {(totalPrice - walletBalance).toFixed(2)} BDT more.
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <button
+              onClick={clearCart}
+              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition font-semibold"
+            >
+              Clear Cart
+            </button>
+            <div className="text-center">
+              <p className="text-xl font-bold text-gray-900">Total: {totalPrice.toFixed(2)} BDT</p>
+              {walletBalance !== null && (
+                <p className="text-sm text-gray-600">
+                  After payment: {(walletBalance - totalPrice).toFixed(2)} BDT
+                </p>
+              )}
+            </div>
+            <button
+              onClick={handleCheckout}
+              disabled={loading || (walletBalance !== null && walletBalance < totalPrice)}
+              className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "Placing Order..." : "Checkout"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

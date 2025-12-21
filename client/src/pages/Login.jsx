@@ -42,13 +42,16 @@ export default function Login() {
 				window.dispatchEvent(new Event('userLogin'));
 
 				// Redirect based on role
-				const role = response.data.data.user.role;
+				const user = response.data.data.user;
+				const role = user.role;
 				if (role === 'customer') {
 					navigate('/dashboard/customer');
 				} else if (role === 'restaurant') {
 					navigate('/dashboard/restaurant');
 				} else if (role === 'deliveryStaff') {
 					navigate('/dashboard/delivery-staff');
+				} else if (role === 'admin' && user.isSuperAdmin === true) {
+					navigate('/dashboard/admin');
 				} else {
 					navigate('/');
 				}

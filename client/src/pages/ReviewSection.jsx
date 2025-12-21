@@ -12,6 +12,9 @@ export default function ReviewSection() {
   const [error, setError] = useState(null);
 
   const token = localStorage.getItem("token");
+  void reviews;
+  void fetching;
+  void error;
 
   // Fetch reviews
   useEffect(() => {
@@ -98,8 +101,6 @@ export default function ReviewSection() {
           </button>
         </div>
       )}
-
-      
     </div>
   );
 }

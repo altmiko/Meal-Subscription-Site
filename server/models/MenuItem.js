@@ -14,6 +14,10 @@ const MenuItemSchema = new Schema({
 
     imageUrl: { type: String, required: true },
 
+    adminComment: { type: String, default: '' },
+    adminCommentedAt: { type: Date, default: null },
+    adminCommentedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+
     // One menu item per day
     day: {
         type: String,

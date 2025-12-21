@@ -12,6 +12,12 @@ export default function Register() {
 		password: '',
 		confirmPassword: '',
 		vehicleType: '',
+		// Customer address fields
+		customerHouse: '',
+		customerRoad: '',
+		customerArea: '',
+		customerCity: '',
+		referralCode: '',
 		// Restaurant location fields
 		locationHouse: '',
 		locationRoad: '',
@@ -92,6 +98,16 @@ export default function Register() {
 				payload.vehicleType = formData.vehicleType;
 			}
 
+			// Add address for customer
+			if (formData.role === 'customer') {
+				payload.address = {
+					house: formData.customerHouse,
+					road: formData.customerRoad,
+					area: formData.customerArea,
+					city: formData.customerCity,
+				};
+			}
+
 			// Add location for restaurant
 			if (formData.role === 'restaurant') {
 				payload.location = {
@@ -116,13 +132,16 @@ export default function Register() {
 				window.dispatchEvent(new Event('userLogin'));
 
 				// Redirect based on role
-				const role = response.data.data.user.role;
+				const user = response.data.data.user;
+				const role = user.role;
 				if (role === 'customer') {
 					navigate('/dashboard/customer');
 				} else if (role === 'restaurant') {
 					navigate('/dashboard/restaurant');
 				} else if (role === 'deliveryStaff') {
 					navigate('/dashboard/delivery-staff');
+				} else if (role === 'admin' && user.isSuperAdmin === true) {
+					navigate('/dashboard/admin');
 				} else {
 					navigate('/');
 				}
@@ -327,6 +346,110 @@ export default function Register() {
 								placeholder="••••••••"
 							/>
 						</div>
+
+						{/* Customer Address Fields */}
+						{formData.role === 'customer' && (
+							<div className="space-y-4 rounded-xl border-2 border-emerald-100 bg-emerald-50 p-4">
+								<h3 className="font-semibold text-gray-900">
+									Address
+								</h3>
+
+								<div>
+									<label
+										htmlFor="customerHouse"
+										className="block text-sm font-medium text-gray-700 mb-2"
+									>
+										House Number
+									</label>
+									<input
+										type="text"
+										id="customerHouse"
+										name="customerHouse"
+										value={formData.customerHouse}
+										onChange={handleChange}
+										className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
+										placeholder="House #123"
+									/>
+								</div>
+
+								<div>
+									<label
+										htmlFor="customerRoad"
+										className="block text-sm font-medium text-gray-700 mb-2"
+									>
+										Road / Street (Optional)
+									</label>
+									<input
+										type="text"
+										id="customerRoad"
+										name="customerRoad"
+										value={formData.customerRoad}
+										onChange={handleChange}
+										className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
+										placeholder="Main Street"
+									/>
+								</div>
+
+								<div>
+									<label
+										htmlFor="customerArea"
+										className="block text-sm font-medium text-gray-700 mb-2"
+									>
+										Area / District
+									</label>
+									<input
+										type="text"
+										id="customerArea"
+										name="customerArea"
+										value={formData.customerArea}
+										onChange={handleChange}
+										required
+										className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
+										placeholder="Downtown"
+									/>
+								</div>
+
+								<div>
+									<label
+										htmlFor="customerCity"
+										className="block text-sm font-medium text-gray-700 mb-2"
+									>
+										City
+									</label>
+									<input
+										type="text"
+										id="customerCity"
+										name="customerCity"
+										value={formData.customerCity}
+										onChange={handleChange}
+										required
+										className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
+										placeholder="New York"
+									/>
+								</div>
+
+								<div>
+									<label
+										htmlFor="referralCode"
+										className="block text-sm font-medium text-gray-700 mb-2"
+									>
+										Referral Code (Optional)
+									</label>
+									<input
+										type="text"
+										id="referralCode"
+										name="referralCode"
+										value={formData.referralCode}
+										onChange={handleChange}
+										className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
+										placeholder="Enter referral code"
+									/>
+									<p className="mt-1 text-xs text-gray-500">
+										Enter a referral code to get rewards on your first order
+									</p>
+								</div>
+							</div>
+						)}
 
 						{/* Restaurant Location Fields */}
 						{formData.role === 'restaurant' && (

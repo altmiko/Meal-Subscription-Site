@@ -62,6 +62,8 @@ export default function Navbar() {
 			navigate('/dashboard/restaurant');
 		} else if (role === 'deliveryStaff') {
 			navigate('/dashboard/delivery-staff');
+		} else if (role === 'admin' && user.isSuperAdmin === true) {
+			navigate('/dashboard/admin');
 		}
 		setIsOpen(false);
 	};

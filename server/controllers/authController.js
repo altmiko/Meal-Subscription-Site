@@ -1,5 +1,7 @@
 import { User } from '../models/User.js';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import Referral from '../models/Referral.js';
 
 const generateToken = (id) => {
 	if (!process.env.JWT_SECRET) {
@@ -10,6 +12,15 @@ const generateToken = (id) => {
 	return jwt.sign({ id }, process.env.JWT_SECRET, {
 		expiresIn: '30d',
 	});
+};
+
+const generateReferralCode = async () => {
+	for (let i = 0; i < 10; i += 1) {
+		const code = Math.floor(1000 + Math.random() * 9000).toString(); // Generate 4-digit number
+		const exists = await User.exists({ referralCode: code });
+		if (!exists) return code;
+	}
+	throw new Error('Failed to generate referral code');
 };
 
 export const register = async (req, res) => {
@@ -23,12 +34,15 @@ export const register = async (req, res) => {
 			password,
 			role: incomingRole,
 			location,
+			address,
 			cuisineTypes,
 			openingHours,
 			menu,
 			vehicleType,
 			licenseNumber,
 			currentLocation,
+			referredByCode,
+			referralCode: referralCodeInput,
 		} = req.body;
 
 		console.log('Location received:', location); // Add this to debug
@@ -49,7 +63,14 @@ export const register = async (req, res) => {
 		}
 
 		const role = incomingRole || 'customer';
+		if (role === 'admin') {
+			return res.status(403).json({
+				success: false,
+				message: 'Invalid role.',
+			});
+		}
 		const userData = { name, email, phone, password, role };
+		userData.referralCode = await generateReferralCode();
 
 		// Role-specific assignments
 		if (role === 'restaurant') {
@@ -73,10 +94,46 @@ export const register = async (req, res) => {
 			// Defaults for delivery staff
 			userData.isAvailable = true;
 			userData.totalDeliveries = 0;
+		} else if (role === 'customer') {
+			// Add address for customers
+			if (address) userData.address = address;
 		}
-		// Customer role: only base fields, no additional fields needed
 
 		const user = await User.create(userData);
+
+		const incomingReferral = referredByCode || referralCodeInput;
+		if (incomingReferral && role === 'customer') {
+			const referrer = await User.findOne({
+				referralCode: String(incomingReferral).trim().toUpperCase(),
+				isActive: true,
+			});
+			if (!referrer) {
+				await User.findByIdAndDelete(user._id);
+				return res.status(400).json({
+					success: false,
+					message: 'Invalid referral code.',
+				});
+			}
+			if (referrer._id.toString() === user._id.toString()) {
+				await User.findByIdAndDelete(user._id);
+				return res.status(400).json({
+					success: false,
+					message: 'Invalid referral code.',
+				});
+			}
+			user.referredBy = referrer._id;
+			await user.save();
+			try {
+				await Referral.create({
+					referrer: referrer._id,
+					referredUser: user._id,
+					codeUsed: referrer.referralCode,
+					status: 'pending',
+				});
+			} catch (err) {
+				if (err.code !== 11000) throw err;
+			}
+		}
 
 		const token = generateToken(user._id);
 
@@ -89,6 +146,7 @@ export const register = async (req, res) => {
 					email: user.email,
 					phone: user.phone,
 					role: user.role,
+					isSuperAdmin: user.isSuperAdmin === true,
 				},
 				token,
 			},
@@ -141,6 +199,7 @@ export const login = async (req, res) => {
 					email: user.email,
 					phone: user.phone,
 					role: user.role,
+					isSuperAdmin: user.isSuperAdmin === true,
 				},
 				token,
 			},

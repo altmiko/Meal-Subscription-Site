@@ -10,15 +10,29 @@ const UserSchema = new Schema({
 	password: { type: String, required: true },
 	role: {
 		type: String,
-		enum: ['customer', 'restaurant', 'deliveryStaff'],
+		enum: ['customer', 'restaurant', 'deliveryStaff', 'admin'],
 		required: true,
 	},
+	isSuperAdmin: { type: Boolean, default: false },
+	isActive: { type: Boolean, default: true },
+	referralCode: { type: String, unique: true, sparse: true },
+	referredBy: { type: Schema.Types.ObjectId, ref: 'User' },
+	// Address field for customers and restaurants
+	address: {
+		house: { type: String, default: '' },
+		road: { type: String, default: '' },
+		area: { type: String, default: '' },
+		city: { type: String, default: '' },
+	},
+	// Delivery staff specific fields
+	isAvailable: { type: Boolean, default: true },
+	totalDeliveries: { type: Number, default: 0 },
 	vehicleType: {
 		type: String,
 		enum: ['Car', 'Bike', 'Bicycle', 'Other'],
 		sparse: true,
 	},
-	// Restaurant-specific fields
+	// Restaurant-specific fields (keeping location for backward compatibility)
 	location: {
 		house: { type: String, default: '' },
 		road: { type: String, default: '' },
@@ -31,6 +45,8 @@ const UserSchema = new Schema({
 	rating: { type: Number, default: 0 },
 	totalRatings: { type: Number, default: 0 },
 	favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+	// Wallet for core financial features
+	walletBalance: { type: Number, default: 0 },
 	createdAt: { type: Date, default: Date.now },
 	updatedAt: { type: Date, default: Date.now },
 });
