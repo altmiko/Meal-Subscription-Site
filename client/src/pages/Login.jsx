@@ -81,7 +81,9 @@ export default function Login() {
 						<h1 className="mt-3 text-3xl font-semibold text-gray-900">
 							Sign in to continue
 						</h1>
-						<p className="text-gray-600">Minimal steps to your next meal.</p>
+						<p className="text-gray-600">
+							Minimal steps to your next meal.
+						</p>
 					</div>
 
 					{/* Error Message */}
@@ -107,7 +109,7 @@ export default function Login() {
 								value={formData.email}
 								onChange={handleChange}
 								required
-							className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
+								className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
 								placeholder="your@email.com"
 							/>
 						</div>
@@ -126,12 +128,12 @@ export default function Login() {
 								value={formData.password}
 								onChange={handleChange}
 								required
-							className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
+								className="w-full rounded-lg border-2 border-gray-200 px-4 py-3 transition-all focus:border-emerald-500 focus:outline-none"
 								placeholder="••••••••"
 							/>
 						</div>
 
-						<div className="flex items-center justify-between">
+						{/* <div className="flex items-center justify-between">
 							<label className="flex items-center">
 								<input
 									type="checkbox"
@@ -147,7 +149,7 @@ export default function Login() {
 							>
 								Forgot password?
 							</a>
-						</div>
+						</div> */}
 
 						<button
 							type="submit"

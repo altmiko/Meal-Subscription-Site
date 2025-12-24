@@ -1,6 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import FloatingCart from './components/FloatingCart';
 import Home from './pages/Home';
 import About from './pages/About';
 import Restaurants from './pages/Restaurants';
@@ -28,7 +27,6 @@ function App() {
 		<Router>
 			<div className="min-h-screen">
 				<Navbar />
-				<FloatingCart />
 				<Routes>
 					<Route path="/" element={<Home />} />
 					<Route path="/about" element={<About />} />
