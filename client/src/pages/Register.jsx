@@ -5,7 +5,7 @@ import axiosInstance from '../api/axios';
 export default function Register() {
 	const navigate = useNavigate();
 	const [formData, setFormData] = useState({
-		role: '',
+		role: 'customer',
 		name: '',
 		email: '',
 		phone: '',
@@ -118,7 +118,10 @@ export default function Register() {
 				};
 			}
 
-			const response = await axiosInstance.post('/api/auth/register', payload);
+			const response = await axiosInstance.post(
+				'/api/auth/register',
+				payload
+			);
 
 			if (response.data.success) {
 				// Store token and user in localStorage
@@ -171,7 +174,9 @@ export default function Register() {
 						<h1 className="mt-3 text-3xl font-semibold text-gray-900">
 							Create an account
 						</h1>
-						<p className="text-gray-600">Choose your role and get cooking.</p>
+						<p className="text-gray-600">
+							Choose your role and get cooking.
+						</p>
 					</div>
 
 					{/* Error Message */}
@@ -445,7 +450,8 @@ export default function Register() {
 										placeholder="Enter referral code"
 									/>
 									<p className="mt-1 text-xs text-gray-500">
-										Enter a referral code to get rewards on your first order
+										Enter a referral code to get rewards on
+										your first order
 									</p>
 								</div>
 							</div>
