@@ -17,28 +17,15 @@ export const addReview = async (req, res) => {
     }
 
     // Create or update review
+    // We force status to be pending if it's a new review or update
     const review = await Review.findOneAndUpdate(
       { restaurant: restaurantId, user: userId },
-      { rating, comment },
+      { rating, comment, status: 'pending' },
       { new: true, upsert: true, runValidators: true }
     );
 
-    // Recalculate restaurant rating
-    const stats = await Review.aggregate([
-      { $match: { restaurant: review.restaurant } },
-      {
-        $group: {
-          _id: "$restaurant",
-          avgRating: { $avg: "$rating" },
-          totalRatings: { $sum: 1 }
-        }
-      }
-    ]);
-
-    await User.findByIdAndUpdate(restaurantId, {
-      rating: stats[0] ? stats[0].avgRating : 0,
-      totalRatings: stats[0] ? stats[0].totalRatings : 0
-    });
+    // Recalculate restaurant rating (based on approved reviews only)
+    await Review.getAverageRating(review.restaurant);
 
     res.status(201).json({ success: true, review });
 

@@ -17,6 +17,8 @@ import {
 	deleteMeal,
 	listReferrals,
 	listRewardPayments,
+	listReviews,
+	updateReviewStatus,
 } from '../controllers/adminController.js';
 import {
 	getTopMeals,
@@ -52,6 +54,9 @@ router.get('/reports/revenue', protect, requireAdmin, getRevenuePerDay);
 
 router.get('/referrals', protect, requireAdmin, listReferrals);
 router.get('/rewards', protect, requireAdmin, listRewardPayments);
+
+router.get('/reviews', protect, requireAdmin, listReviews);
+router.patch('/reviews/:id/status', protect, requireAdmin, updateReviewStatus);
 
 export default router;
 

@@ -6,6 +6,7 @@ import Subscription from '../models/Subscription.js';
 import { MenuItem } from '../models/MenuItem.js';
 import Payment from '../models/Payment.js';
 import Referral from '../models/Referral.js';
+import Review from '../models/Reviews.js';
 
 const generateToken = (id) => {
 	if (!process.env.JWT_SECRET) {
@@ -465,6 +466,57 @@ export const listRewardPayments = async (req, res) => {
 		]);
 
 		return res.status(200).json({ success: true, data: { items, total } });
+	} catch (error) {
+		return res.status(500).json({ success: false, message: error.message });
+	}
+};
+
+export const listReviews = async (req, res) => {
+	try {
+		const { status, page = 1, limit = 20 } = req.query;
+		const query = {};
+		if (status) query.status = status;
+
+		const skip = (Number(page) - 1) * Number(limit);
+		const [items, total] = await Promise.all([
+			Review.find(query)
+				.sort({ createdAt: -1 })
+				.populate('user', 'name email')
+				.populate('restaurant', 'name email')
+				.skip(skip)
+				.limit(Number(limit)),
+			Review.countDocuments(query),
+		]);
+
+		return res.status(200).json({ success: true, data: { items, total } });
+	} catch (error) {
+		return res.status(500).json({ success: false, message: error.message });
+	}
+};
+
+export const updateReviewStatus = async (req, res) => {
+	try {
+		const { id } = req.params;
+		const { status } = req.body;
+
+		if (!['pending', 'approved', 'rejected'].includes(status)) {
+			return res.status(400).json({ success: false, message: 'Invalid status value.' });
+		}
+
+		const review = await Review.findByIdAndUpdate(
+			id,
+			{ status },
+			{ new: true, runValidators: true }
+		);
+
+		if (!review) {
+			return res.status(404).json({ success: false, message: 'Review not found.' });
+		}
+
+		// Recalculate rating
+		await Review.getAverageRating(review.restaurant);
+
+		return res.status(200).json({ success: true, data: review });
 	} catch (error) {
 		return res.status(500).json({ success: false, message: error.message });
 	}

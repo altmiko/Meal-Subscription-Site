@@ -19,6 +19,28 @@ export const getTopMeals = async (req, res) => {
 					revenue: { $sum: { $multiply: ['$items.quantity', '$items.price'] } },
 				},
 			},
+			{
+				$lookup: {
+					from: 'menuitems',
+					localField: '_id',
+					foreignField: '_id',
+					as: 'meal',
+				},
+			},
+			{
+				$unwind: {
+					path: '$meal',
+					preserveNullAndEmptyArrays: true,
+				},
+			},
+			{
+				$project: {
+					_id: 1,
+					quantity: 1,
+					revenue: 1,
+					name: { $ifNull: ['$meal.name', 'Unknown Meal'] },
+				},
+			},
 			{ $sort: { quantity: -1 } },
 			{ $limit: limit },
 		]);

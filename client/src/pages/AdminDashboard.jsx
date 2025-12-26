@@ -12,6 +12,7 @@ const tabs = [
 	'Reports',
 	'Referrals',
 	'Rewards',
+	'Reviews',
 ];
 
 export default function AdminDashboard() {
@@ -36,6 +37,7 @@ export default function AdminDashboard() {
 	});
 	const [referrals, setReferrals] = useState([]);
 	const [rewards, setRewards] = useState([]);
+	const [reviews, setReviews] = useState([]);
 
 	const [busyId, setBusyId] = useState(null);
 
@@ -124,6 +126,11 @@ export default function AdminDashboard() {
 		setRewards(res.data.data.items || []);
 	};
 
+	const loadReviews = async () => {
+		const res = await axiosInstance.get('/api/admin/reviews?limit=50');
+		setReviews(res.data.data.items || []);
+	};
+
 	const loadByTab = async (tabName) => {
 		setError('');
 		try {
@@ -136,6 +143,7 @@ export default function AdminDashboard() {
 			if (tabName === 'Reports') await loadReports();
 			if (tabName === 'Referrals') await loadReferrals();
 			if (tabName === 'Rewards') await loadRewards();
+			if (tabName === 'Reviews') await loadReviews();
 		} catch (err) {
 			setError(
 				err.response?.data?.message ||
@@ -260,6 +268,25 @@ export default function AdminDashboard() {
 				err.response?.data?.message ||
 					err.message ||
 					'Failed to save comment'
+			);
+		} finally {
+			setBusyId(null);
+		}
+	};
+
+	const updateReviewStatus = async (id, status) => {
+		setBusyId(id);
+		setError('');
+		try {
+			await axiosInstance.patch(`/api/admin/reviews/${id}/status`, {
+				status,
+			});
+			await loadReviews();
+		} catch (err) {
+			setError(
+				err.response?.data?.message ||
+					err.message ||
+					'Failed to update review'
 			);
 		} finally {
 			setBusyId(null);
@@ -793,7 +820,7 @@ export default function AdminDashboard() {
 									key={m._id}
 									className="flex items-center justify-between"
 								>
-									<span className="truncate">{m._id}</span>
+									<span className="truncate">{m.name}</span>
 									<span className="font-semibold">
 										{m.quantity}
 									</span>
@@ -940,6 +967,99 @@ export default function AdminDashboard() {
 											colSpan={4}
 										>
 											No rewards found.
+										</td>
+									</tr>
+								) : null}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			)}
+
+			{activeTab === 'Reviews' && (
+				<div className="rounded-xl border border-gray-100 bg-white shadow-sm">
+					<div className="overflow-x-auto">
+						<table className="min-w-full text-left text-sm">
+							<thead className="border-b border-gray-100 bg-gray-50 text-gray-600">
+								<tr>
+									<th className="px-4 py-3">Restaurant</th>
+									<th className="px-4 py-3">User</th>
+									<th className="px-4 py-3">Rating</th>
+									<th className="px-4 py-3">Comment</th>
+									<th className="px-4 py-3">Status</th>
+									<th className="px-4 py-3 text-right">Actions</th>
+								</tr>
+							</thead>
+							<tbody>
+								{reviews.map((r) => (
+									<tr
+										key={r._id}
+										className="border-b border-gray-100"
+									>
+										<td className="px-4 py-3 text-gray-700">
+											{r.restaurant?.name || '—'}
+										</td>
+										<td className="px-4 py-3 text-gray-700">
+											{r.user?.name || '—'}
+										</td>
+										<td className="px-4 py-3 text-gray-700">
+											{r.rating} / 5
+										</td>
+										<td className="px-4 py-3 text-gray-700 truncate max-w-xs">
+											{r.comment}
+										</td>
+										<td className="px-4 py-3">
+											<span
+												className={`rounded-full px-2 py-1 text-xs font-semibold ${
+													r.status === 'approved'
+														? 'bg-emerald-50 text-emerald-700'
+														: r.status === 'rejected'
+														? 'bg-red-50 text-red-700'
+														: 'bg-yellow-50 text-yellow-700'
+												}`}
+											>
+												{r.status}
+											</span>
+										</td>
+										<td className="px-4 py-3 text-right">
+											{r.status === 'pending' && (
+												<div className="flex justify-end gap-2">
+													<button
+														disabled={busyId === r._id}
+														onClick={() =>
+															updateReviewStatus(
+																r._id,
+																'approved'
+															)
+														}
+														className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-50"
+													>
+														Approve
+													</button>
+													<button
+														disabled={busyId === r._id}
+														onClick={() =>
+															updateReviewStatus(
+																r._id,
+																'rejected'
+															)
+														}
+														className="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+													>
+														Reject
+													</button>
+												</div>
+											)}
+										</td>
+									</tr>
+								))}
+								{reviews.length === 0 ? (
+									<tr>
+										<td
+											className="px-4 py-6 text-gray-600"
+											colSpan={6}
+										>
+											No reviews found.
 										</td>
 									</tr>
 								) : null}

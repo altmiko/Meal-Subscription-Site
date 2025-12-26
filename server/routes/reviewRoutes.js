@@ -114,7 +114,7 @@ router.post("/:restaurantId", protect, async (req, res) => {
 // GET restaurant reviews
 router.get("/:restaurantId", async (req, res) => {
   try {
-    const reviews = await Review.find({ restaurant: req.params.restaurantId })
+    const reviews = await Review.find({ restaurant: req.params.restaurantId, status: 'approved' })
       .populate("user", "name")
       .sort({ createdAt: -1 });
 
