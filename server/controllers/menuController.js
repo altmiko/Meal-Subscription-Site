@@ -195,3 +195,33 @@ export const deleteMenuItem = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+
+// Simple seeded random function
+const seededRandom = (seed) => {
+    let x = Math.sin(seed++) * 10000;
+    return x - Math.floor(x);
+};
+
+// Get Menu of the Day
+export const getMenuOfTheDay = async (req, res) => {
+    try {
+        const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+        const seed = today.split('-').reduce((a, b) => a + parseInt(b), 0); // Simple seed sum
+
+        const allItems = await MenuItem.find({}).populate('restaurant', 'name');
+        
+        if (allItems.length <= 5) {
+            return res.json({ success: true, data: allItems });
+        }
+
+        // Shuffle using the seed
+        const shuffled = [...allItems].sort(() => 0.5 - seededRandom(seed));
+
+        // Return first 5
+        const motd = shuffled.slice(0, 5);
+        res.json({ success: true, data: motd });
+    } catch (err) {
+        console.error("MOTD Error:", err);
+        res.status(500).json({ success: false, message: "Failed to fetch Menu of the Day" });
+    }
+};

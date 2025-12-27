@@ -21,9 +21,9 @@ export default function SubscriptionManager({ restaurantId: propRestaurantId }) 
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
+    fetchSubscriptions();
     if (restaurantId) {
       fetchMenuItems();
-      fetchSubscriptions();
     }
   }, [restaurantId]);
 
@@ -40,8 +40,12 @@ export default function SubscriptionManager({ restaurantId: propRestaurantId }) 
     try {
       setLoading(true);
       const { data } = await axiosInstance.get('/api/subscriptions');
-      const restaurantSubs = (data.data || []).filter(sub => sub.restaurantId._id === restaurantId);
-      setSubscriptions(restaurantSubs);
+      // If restaurantId is provided, filter. Otherwise show all (backend already filters by user)
+      const visibleSubs = restaurantId 
+        ? (data.data || []).filter(sub => sub.restaurantId._id === restaurantId)
+        : (data.data || []);
+        
+      setSubscriptions(visibleSubs);
     } catch (error) {
       console.error('Failed to fetch subscriptions:', error);
     } finally {
@@ -176,38 +180,56 @@ export default function SubscriptionManager({ restaurantId: propRestaurantId }) 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Manage Subscriptions</h2>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-semibold"
-        >
-          + Create Subscription
-        </button>
-      </div>
-
-      {/* Package Meals Quick Actions */}
-      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-        <h3 className="font-semibold text-gray-900 mb-3">Quick Package Meals</h3>
-        <div className="flex gap-3">
+        <h2 className="text-2xl font-bold text-gray-900">
+          {restaurantId ? 'Manage Subscriptions' : 'Your Subscriptions'}
+        </h2>
+        {restaurantId && (
           <button
-            onClick={() => handlePackageMeals('lunch')}
+            onClick={() => setShowCreateModal(true)}
             className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-semibold"
           >
-            📦 Package All Lunches (1x each)
+            + Create Subscription
           </button>
-          <button
-            onClick={() => handlePackageMeals('dinner')}
-            className="px-4 py-2 bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 transition font-semibold"
-          >
-            📦 Package All Dinners (1x each)
-          </button>
-        </div>
+        )}
       </div>
+
+      {/* Package Meals Quick Actions - Only show if in Restaurant context */}
+      {restaurantId && (
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <h3 className="font-semibold text-gray-900 mb-3">Quick Package Meals</h3>
+          <div className="flex gap-3">
+            <button
+              onClick={() => handlePackageMeals('lunch')}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-semibold"
+            >
+              📦 Package All Lunches (1x each)
+            </button>
+            <button
+              onClick={() => handlePackageMeals('dinner')}
+              className="px-4 py-2 bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 transition font-semibold"
+            >
+              📦 Package All Dinners (1x each)
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Existing Subscriptions */}
       {subscriptions.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          <p>No subscriptions yet. Create one to get started!</p>
+          {restaurantId ? (
+            <p>No subscriptions yet. Create one to get started!</p>
+          ) : (
+            <div>
+              <p className="mb-4">You don't have any active subscriptions.</p>
+              <button 
+                onClick={() => navigate('/restaurants')}
+                className="text-emerald-600 font-semibold hover:underline"
+              >
+                Browse Restaurants to Subscribe
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -247,6 +269,7 @@ export default function SubscriptionManager({ restaurantId: propRestaurantId }) 
 function SubscriptionCard({ subscription, onPause, onResume, onCancel }) {
   const isActive = subscription.status === 'active';
   const isPaused = subscription.status === 'paused';
+  const isCancelled = subscription.status === 'cancelled';
   
   return (
     <div className={`border-2 rounded-lg p-4 ${isActive ? 'border-emerald-200 bg-emerald-50' : isPaused ? 'border-orange-200 bg-orange-50' : 'border-gray-200'}`}>
@@ -259,6 +282,7 @@ function SubscriptionCard({ subscription, onPause, onResume, onCancel }) {
             <span className={`px-2 py-1 rounded text-xs font-semibold ${
               isActive ? 'bg-emerald-200 text-emerald-800' :
               isPaused ? 'bg-orange-200 text-orange-800' :
+              isCancelled ? 'bg-gray-200 text-gray-800' :
               'bg-gray-200 text-gray-800'
             }`}>
               {subscription.status.toUpperCase()}
@@ -285,12 +309,20 @@ function SubscriptionCard({ subscription, onPause, onResume, onCancel }) {
               ▶️ Resume
             </button>
           )}
-          <button
+          {!isCancelled && (
+            <button
+              onClick={() => onCancel(subscription._id)}
+              className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-semibold"
+            >
+              ✕ Cancel
+            </button>
+          ) }
+          {/* <button
             onClick={() => onCancel(subscription._id)}
             className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-semibold"
           >
             ✕ Cancel
-          </button>
+          </button> */}
         </div>
       </div>
       

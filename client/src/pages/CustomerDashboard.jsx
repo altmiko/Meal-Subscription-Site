@@ -164,12 +164,12 @@ const Header = ({ user, onLogout }) => (
 
 const QuickActions = ({ navigate, showFavorites, setShowFavorites }) => (
 	<div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-		<ActionCard
+		{/* <ActionCard
 			icon="🍽️"
 			title="Browse Restaurants"
 			desc="Discover delicious meals from restaurants"
 			onClick={() => navigate('/restaurants')}
-		/>
+		/> */}
 		<ActionCard
 			icon="📦"
 			title="My Orders"

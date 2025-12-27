@@ -6,6 +6,7 @@ import {
     getMenuByRestaurantId,
     updateMenuItem,
     deleteMenuItem,
+    getMenuOfTheDay,
 } from '../controllers/menuController.js';
 
 const router = express.Router();
@@ -19,5 +20,8 @@ router.delete('/:id', protect, deleteMenuItem);
 
 // Public endpoint to fetch menu by restaurant id
 router.get('/restaurant/:restaurantId', getMenuByRestaurantId);
+
+// Menu of the Day
+router.get('/motd', getMenuOfTheDay);
 
 export default router;

@@ -1,7 +1,23 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axiosInstance from '../api/axios';
+import MenuOfTheDay from '../components/MenuOfTheDay';
 
 export default function Home() {
 	const navigate = useNavigate();
+	const [reviews, setReviews] = useState([]);
+
+	useEffect(() => {
+		const fetchTopReviews = async () => {
+			try {
+				const res = await axiosInstance.get('/api/reviews/top');
+				setReviews(res.data);
+			} catch (err) {
+				console.error("Failed to fetch top reviews", err);
+			}
+		};
+		fetchTopReviews();
+	}, []);
 
 	return (
 		<main className="min-h-screen bg-white text-gray-900">
@@ -56,6 +72,10 @@ export default function Home() {
 					</div>
 				</div>
 			</section>
+
+
+            {/* Menu of the Day */}
+            <MenuOfTheDay />
 
 			{/* Value props */}
 			<section className="bg-white">
@@ -171,40 +191,32 @@ export default function Home() {
 						</p>
 					</div>
 					<div className="grid gap-6 md:grid-cols-3">
-						{[
-							{
-								name: 'Priya K.',
-								role: 'Subscriber · 8 months',
-								quote: 'The only service that keeps meals interesting without any of the usual delivery chaos.',
-							},
-							{
-								name: 'Adam L.',
-								role: 'Founder & dad of two',
-								quote: 'Setup took five minutes. We now get balanced dinners that fit into a packed schedule.',
-							},
-							{
-								name: 'Maria S.',
-								role: 'Product designer',
-								quote: 'Packaging is immaculate, portions are perfect, and the menu rotates before we ever get bored.',
-							},
-						].map((item) => (
-							<div
-								key={item.name}
-								className="flex flex-col rounded-2xl border border-gray-100 bg-white p-8 shadow-sm"
-							>
-								<p className="mb-6 text-sm leading-relaxed text-gray-700">
-									“{item.quote}”
-								</p>
-								<div className="mt-auto">
-									<div className="text-sm font-semibold text-gray-900">
-										{item.name}
-									</div>
-									<div className="text-xs text-gray-600">
-										{item.role}
+						{reviews.length > 0 ? (
+							reviews.map((review) => (
+								<div
+									key={review._id}
+									className="flex flex-col rounded-2xl border border-gray-100 bg-white p-8 shadow-sm"
+								>
+									<p className="mb-6 text-sm leading-relaxed text-gray-700">
+										“{review.comment}”
+									</p>
+									<div className="mt-auto">
+										<div className="text-sm font-semibold text-gray-900">
+											{review.user?.name || 'Anonymous'}
+										</div>
+										<div className="text-xs text-gray-600">
+											{review.user?.role === 'customer' 
+												? 'Subscriber' 
+												: review.user?.role || 'Subscriber'}
+										</div>
 									</div>
 								</div>
+							))
+						) : (
+							<div className="col-span-3 text-center text-gray-500">
+								No reviews available yet.
 							</div>
-						))}
+						)}
 					</div>
 				</div>
 			</section>

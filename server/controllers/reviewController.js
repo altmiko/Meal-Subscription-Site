@@ -34,3 +34,16 @@ export const addReview = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+export const getTopReviews = async (req, res) => {
+  try {
+    const reviews = await Review.find({ status: 'approved', rating: 5, comment: { $ne: "" } })
+      .sort({ createdAt: -1 })
+      .limit(3)
+      .populate("user", "name role");
+    res.json(reviews);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch top reviews" });
+  }
+};

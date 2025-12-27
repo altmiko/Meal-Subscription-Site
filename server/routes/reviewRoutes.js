@@ -3,6 +3,7 @@ import Review from "../models/Reviews.js";
 import DeliveryStaffReview from "../models/DeliveryStaffReview.js";
 import { User } from "../models/User.js";
 import { protect } from "../middleware/authMiddleware.js";
+import { getTopReviews } from "../controllers/reviewController.js";
 
 
 const router = express.Router();
@@ -110,6 +111,9 @@ router.post("/:restaurantId", protect, async (req, res) => {
     res.status(500).json({ message: "Failed to submit review" });
   }
 });
+
+// GET top reviews (must be before /:restaurantId)
+router.get("/top", getTopReviews);
 
 // GET restaurant reviews
 router.get("/:restaurantId", async (req, res) => {
