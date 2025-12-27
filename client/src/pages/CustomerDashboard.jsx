@@ -11,6 +11,8 @@ export default function CustomerDashboard() {
 	const [favorites, setFavorites] = useState([]);
 	const [showFavorites, setShowFavorites] = useState(false);
 	const [activeTab, setActiveTab] = useState('calendar'); // 'calendar' or 'subscriptions'
+	const [walletBalance, setWalletBalance] = useState(0);
+	const [subscriptions, setSubscriptions] = useState([]);
 
 	// ------------------ Load user ------------------
 	useEffect(() => {
@@ -27,6 +29,7 @@ export default function CustomerDashboard() {
 				return;
 			}
 			setUser(parsedUser);
+			setWalletBalance(parsedUser.walletBalance || 0);
 		} catch (err) {
 			console.error('Error parsing user data:', err);
 			navigate('/login');
@@ -34,6 +37,36 @@ export default function CustomerDashboard() {
 			setLoading(false);
 		}
 	}, [navigate]);
+
+	// Fetch wallet balance and subscriptions for payment info
+	useEffect(() => {
+		if (user) {
+			fetchWalletBalance();
+			fetchSubscriptions();
+		}
+	}, [user]);
+
+	const fetchWalletBalance = async () => {
+		try {
+			const res = await axiosInstance.get('/api/wallet/balance');
+			if (res.data.success) {
+				setWalletBalance(res.data.balance || 0);
+			}
+		} catch (err) {
+			console.error('Failed to fetch wallet balance', err);
+		}
+	};
+
+	const fetchSubscriptions = async () => {
+		try {
+			const res = await axiosInstance.get('/api/subscriptions');
+			if (res.data.success) {
+				setSubscriptions(res.data.data || []);
+			}
+		} catch (err) {
+			console.error('Failed to fetch subscriptions', err);
+		}
+	};
 
 	// ------------------ Handle user updates ------------------
 	const handleUserUpdate = (updatedUser) => {
@@ -72,62 +105,179 @@ export default function CustomerDashboard() {
 		if (user && showFavorites) fetchFavorites();
 	}, [user, showFavorites]);
 
+	// Calculate next payment info
+	const getNextPaymentInfo = () => {
+		const activeSubscriptions = subscriptions.filter(s => s.status === 'active');
+		if (activeSubscriptions.length === 0) return null;
+
+		const totalWeekly = activeSubscriptions.reduce((sum, sub) => {
+			const subTotal = (sub.mealSelections || []).reduce((mealSum, meal) => {
+				return mealSum + ((meal.price || 0) * (meal.quantity || 1));
+			}, 0);
+			return sum + subTotal;
+		}, 0);
+
+		// Next Monday
+		const today = new Date();
+		const daysUntilMonday = (8 - today.getDay()) % 7 || 7;
+		const nextMonday = new Date(today);
+		nextMonday.setDate(today.getDate() + daysUntilMonday);
+
+		return {
+			amount: totalWeekly,
+			date: nextMonday.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+		};
+	};
+
+	const nextPayment = getNextPaymentInfo();
+
 	if (loading) {
 		return (
-			<div className="min-h-screen bg-gray-50 flex items-center justify-center pt-24">
+			<div className="min-h-screen bg-stone-50 flex items-center justify-center pt-24">
 				<div className="text-center">
-					<div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 border-t-transparent mx-auto mb-4"></div>
-					<p className="text-gray-600 text-lg">Loading...</p>
+					<div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-700 border-t-transparent mx-auto mb-4"></div>
+					<p className="text-stone-600 text-lg">Loading your dashboard...</p>
 				</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="min-h-screen bg-white pt-24">
+		<div className="min-h-screen bg-gradient-to-br from-stone-50 via-emerald-50/30 to-stone-100 pt-24">
 			<div className="max-w-7xl mx-auto px-4 py-8">
-				{/* Header */}
-				<Header user={user} onLogout={handleLogout} />
+				{/* Header Section */}
+				<div className="mb-8">
+					<div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+						{/* Welcome Card */}
+						<div className="flex-1 bg-gradient-to-r from-emerald-700 to-teal-600 rounded-2xl p-6 text-white shadow-lg">
+							<div className="flex justify-between items-start">
+								<div>
+									<p className="text-emerald-100 text-sm font-medium mb-1">Welcome back,</p>
+									<h1 className="text-3xl font-bold mb-2">{user?.name}</h1>
+									<p className="text-emerald-100/80 text-sm">Manage your meals, subscriptions, and account</p>
+								</div>
+								<button
+									onClick={handleLogout}
+									className="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-2 rounded-lg text-sm font-medium transition"
+								>
+									Sign Out
+								</button>
+							</div>
+						</div>
 
-				{/* Quick Actions */}
-				<QuickActions
-					navigate={navigate}
-					showFavorites={showFavorites}
-					setShowFavorites={setShowFavorites}
-				/>
+						{/* Stats Cards */}
+						<div className="flex gap-4 lg:w-auto">
+							{/* Balance Card */}
+							<div className="flex-1 lg:w-48 bg-white rounded-2xl p-5 shadow-sm border border-stone-200/60">
+								<div className="flex items-center gap-3 mb-2">
+									<div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+										<span className="text-lg">💳</span>
+									</div>
+									<span className="text-stone-500 text-sm font-medium">Wallet Balance</span>
+								</div>
+								<p className="text-2xl font-bold text-stone-800">{walletBalance.toFixed(0)} <span className="text-base font-normal text-stone-500">BDT</span></p>
+								<button 
+									onClick={() => navigate('/wallet')}
+									className="mt-3 text-emerald-600 text-sm font-medium hover:text-emerald-700 transition"
+								>
+									Add funds →
+								</button>
+							</div>
 
-				{/* Meal Calendar & Subscriptions Tabs */}
-				<div className="mb-6">
-					<div className="border-b border-gray-200 mb-4">
-						<nav className="flex gap-4">
+							{/* Next Payment Card */}
+							<div className="flex-1 lg:w-48 bg-white rounded-2xl p-5 shadow-sm border border-stone-200/60">
+								<div className="flex items-center gap-3 mb-2">
+									<div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+										<span className="text-lg">📅</span>
+									</div>
+									<span className="text-stone-500 text-sm font-medium">Next Payment</span>
+								</div>
+								{nextPayment ? (
+									<>
+										<p className="text-2xl font-bold text-stone-800">{nextPayment.amount.toFixed(0)} <span className="text-base font-normal text-stone-500">BDT</span></p>
+										<p className="mt-1 text-stone-500 text-sm">{nextPayment.date}</p>
+									</>
+								) : (
+									<>
+										<p className="text-lg font-semibold text-stone-400">No active plans</p>
+										<button 
+											onClick={() => navigate('/restaurants')}
+											className="mt-2 text-emerald-600 text-sm font-medium hover:text-emerald-700 transition"
+										>
+											Browse restaurants →
+										</button>
+									</>
+								)}
+							</div>
+						</div>
+					</div>
+				</div>
+
+				{/* Quick Actions Grid */}
+				<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+					<QuickActionCard
+						icon="📦"
+						title="My Orders"
+						color="bg-blue-50 text-blue-600"
+						onClick={() => navigate('/my-orders')}
+					/>
+					<QuickActionCard
+						icon="�"
+						title="Wallet"
+						color="bg-emerald-50 text-emerald-600"
+						onClick={() => navigate('/wallet')}
+					/>
+					<QuickActionCard
+						icon="❤️"
+						title="Favorites"
+						color="bg-rose-50 text-rose-600"
+						onClick={() => setShowFavorites(!showFavorites)}
+						active={showFavorites}
+					/>
+					<QuickActionCard
+						icon="🎁"
+						title="Referrals"
+						color="bg-purple-50 text-purple-600"
+						onClick={() => navigate('/referrals')}
+					/>
+				</div>
+
+				{/* Main Content Tabs */}
+				<div className="bg-white rounded-2xl shadow-sm border border-stone-200/60 overflow-hidden mb-8">
+					<div className="border-b border-stone-200 bg-stone-50/50">
+						<nav className="flex">
 							<button
 								onClick={() => setActiveTab('calendar')}
-								className={`px-4 py-2 font-semibold border-b-2 transition ${
+								className={`flex-1 px-6 py-4 text-sm font-semibold transition border-b-2 ${
 									activeTab === 'calendar'
-										? 'border-emerald-600 text-emerald-600'
-										: 'border-transparent text-gray-600 hover:text-gray-900'
+										? 'border-emerald-600 text-emerald-700 bg-white'
+										: 'border-transparent text-stone-500 hover:text-stone-700 hover:bg-stone-100/50'
 								}`}
 							>
-								📅 Meal Calendar
+								<span className="mr-2">📅</span>
+								Meal Calendar
 							</button>
 							<button
 								onClick={() => setActiveTab('subscriptions')}
-								className={`px-4 py-2 font-semibold border-b-2 transition ${
+								className={`flex-1 px-6 py-4 text-sm font-semibold transition border-b-2 ${
 									activeTab === 'subscriptions'
-										? 'border-emerald-600 text-emerald-600'
-										: 'border-transparent text-gray-600 hover:text-gray-900'
+										? 'border-emerald-600 text-emerald-700 bg-white'
+										: 'border-transparent text-stone-500 hover:text-stone-700 hover:bg-stone-100/50'
 								}`}
 							>
-								📦 Manage Subscriptions
+								<span className="mr-2">📦</span>
+								Manage Subscriptions
 							</button>
 						</nav>
 					</div>
 
-					{activeTab === 'calendar' ? (
-						<MealCalendar />
-					) : (
-						<SubscriptionManager />
-					)}
+					<div className="p-6">
+						{activeTab === 'calendar' ? (
+							<MealCalendar />
+						) : (
+							<SubscriptionManager />
+						)}
+					</div>
 				</div>
 
 				{/* Favorites List */}
@@ -143,109 +293,61 @@ export default function CustomerDashboard() {
 }
 
 // ------------------ Components ------------------
-const Header = ({ user, onLogout }) => (
-	<div className="bg-gray-50 rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
-		<div className="flex justify-between items-center">
-			<div>
-				<h1 className="text-3xl font-semibold text-gray-900 mb-2">
-					Welcome, {user?.name}!
-				</h1>
-				<p className="text-gray-600">Customer Dashboard</p>
-			</div>
-			<button
-				onClick={onLogout}
-				className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-900 transition hover:border-emerald-200 hover:bg-emerald-50"
-			>
-				Logout
-			</button>
-		</div>
-	</div>
-);
 
-const QuickActions = ({ navigate, showFavorites, setShowFavorites }) => (
-	<div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-		{/* <ActionCard
-			icon="🍽️"
-			title="Browse Restaurants"
-			desc="Discover delicious meals from restaurants"
-			onClick={() => navigate('/restaurants')}
-		/> */}
-		<ActionCard
-			icon="📦"
-			title="My Orders"
-			desc="View your order history"
-			onClick={() => navigate('/my-orders')}
-		/>
-		<ActionCard
-			icon="💰"
-			title="Wallet & Payments"
-			desc="Recharge and view transactions"
-			onClick={() => navigate('/wallet')}
-		/>
-		<ActionCard
-			icon="❤️"
-			title="Favorites"
-			desc="Your favorite restaurants"
-			onClick={() => setShowFavorites(!showFavorites)}
-		/>
-		<ActionCard
-			icon="🎁"
-			title="Referrals & Rewards"
-			desc="Share a code and earn wallet credits"
-			onClick={() => navigate('/referrals')}
-		/>
-	</div>
-);
-
-const ActionCard = ({ icon, title, desc, onClick }) => (
+const QuickActionCard = ({ icon, title, color, onClick, active }) => (
 	<button
 		onClick={onClick}
-		className="rounded-xl border border-gray-100 bg-white p-6 text-left shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+		className={`flex items-center gap-3 p-4 rounded-xl border transition hover:shadow-md ${
+			active 
+				? 'bg-emerald-50 border-emerald-200 shadow-sm' 
+				: 'bg-white border-stone-200/60 hover:border-stone-300'
+		}`}
 	>
-		<div className="text-4xl mb-3">{icon}</div>
-		<h3 className="text-xl font-semibold text-gray-900 mb-2">{title}</h3>
-		<p className="text-gray-600">{desc}</p>
+		<div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>
+			<span className="text-xl">{icon}</span>
+		</div>
+		<span className="font-medium text-stone-700">{title}</span>
 	</button>
 );
 
 const FavoritesList = ({ favorites, navigate }) => (
-	<div className="mt-8">
-		<h2 className="text-2xl font-semibold mb-4">
-			Your Favorite Restaurants
+	<div className="bg-white rounded-2xl shadow-sm border border-stone-200/60 p-6 mb-8">
+		<h2 className="text-xl font-bold text-stone-800 mb-4 flex items-center gap-2">
+			<span className="text-rose-500">❤️</span>
+			Favorite Restaurants
 		</h2>
 		{favorites.length === 0 ? (
-			<p className="text-gray-500">
-				You have no favorite restaurants yet.
-			</p>
+			<div className="text-center py-8">
+				<p className="text-stone-500 mb-3">You haven't added any favorites yet.</p>
+				<button 
+					onClick={() => navigate('/restaurants')}
+					className="text-emerald-600 font-medium hover:text-emerald-700"
+				>
+					Discover restaurants →
+				</button>
+			</div>
 		) : (
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 				{favorites.map((r) => (
 					<div
 						key={r._id}
 						onClick={() => navigate(`/restaurants/${r._id}`)}
-						className="bg-white rounded-2xl border shadow-sm hover:shadow-lg cursor-pointer transition"
+						className="group p-4 rounded-xl border border-stone-200 hover:border-emerald-300 hover:shadow-md cursor-pointer transition"
 					>
-						<div className="h-48 bg-emerald-100 rounded-t-2xl border border-black flex items-center justify-center text-6xl">
-							🍽️
-						</div>
-						<div className="p-6">
-							<h2 className="text-xl font-semibold mb-2">
-								{r.name}
-							</h2>
-							{r.location && (
-								<p className="text-sm text-gray-600 mb-4">
-									📍 {r.location.city}, {r.location.area}
-								</p>
-							)}
-							<button
-								onClick={(e) => {
-									e.stopPropagation();
-									navigate(`/restaurants/${r._id}`);
-								}}
-								className="w-full bg-emerald-600 text-white py-2.5 rounded-lg font-semibold"
-							>
-								View Menu
-							</button>
+						<div className="flex items-center gap-4">
+							<div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-2xl">
+								🍽️
+							</div>
+							<div className="flex-1 min-w-0">
+								<h3 className="font-semibold text-stone-800 truncate group-hover:text-emerald-700 transition">
+									{r.name}
+								</h3>
+								{r.location && (
+									<p className="text-sm text-stone-500 truncate">
+										📍 {r.location.area}, {r.location.city}
+									</p>
+								)}
+							</div>
 						</div>
 					</div>
 				))}
@@ -376,14 +478,14 @@ const AccountInfo = ({ user, onUserUpdate }) => {
 
 	if (isEditing) {
 		return (
-			<div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mt-8">
-				<div className="flex justify-between items-center mb-4">
-					<h2 className="text-2xl font-semibold text-gray-900">
-						Edit Account Information
+			<div className="bg-white rounded-2xl shadow-sm border border-stone-200/60 p-6">
+				<div className="flex justify-between items-center mb-6">
+					<h2 className="text-xl font-bold text-stone-800">
+						Edit Account
 					</h2>
 					<button
 						onClick={() => setIsEditing(false)}
-						className="text-gray-500 hover:text-gray-700 text-xl"
+						className="text-stone-400 hover:text-stone-600 text-xl transition"
 					>
 						✕
 					</button>
@@ -395,103 +497,96 @@ const AccountInfo = ({ user, onUserUpdate }) => {
 					</div>
 				)}
 
-				<div className="space-y-4">
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-1">
-							Name
+						<label className="block text-sm font-medium text-stone-600 mb-1.5">
+							Full Name
 						</label>
 						<input
 							type="text"
 							name="name"
 							value={editForm.name}
 							onChange={handleInputChange}
-							className="w-full rounded-lg border-2 border-gray-200 px-4 py-2 transition-all focus:border-emerald-500 focus:outline-none"
+							className="w-full rounded-lg border border-stone-300 px-4 py-2.5 transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
 						/>
 					</div>
 
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-1">
-							Email
+						<label className="block text-sm font-medium text-stone-600 mb-1.5">
+							Email Address
 						</label>
 						<input
 							type="email"
 							name="email"
 							value={editForm.email}
 							onChange={handleInputChange}
-							className="w-full rounded-lg border-2 border-gray-200 px-4 py-2 transition-all focus:border-emerald-500 focus:outline-none"
+							className="w-full rounded-lg border border-stone-300 px-4 py-2.5 transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
 						/>
 					</div>
 
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-1">
-							Phone
+						<label className="block text-sm font-medium text-stone-600 mb-1.5">
+							Phone Number
 						</label>
 						<input
 							type="tel"
 							name="phone"
 							value={editForm.phone}
 							onChange={handleInputChange}
-							className="w-full rounded-lg border-2 border-gray-200 px-4 py-2 transition-all focus:border-emerald-500 focus:outline-none"
+							className="w-full rounded-lg border border-stone-300 px-4 py-2.5 transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
 						/>
 					</div>
 
-					<div className="border-t pt-4">
-						<h3 className="text-lg font-semibold text-gray-900 mb-3">
-							Address
-						</h3>
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">
-									House Number
-								</label>
-								<input
-									type="text"
-									name="address.house"
-									value={editForm.address.house}
-									onChange={handleInputChange}
-									className="w-full rounded-lg border-2 border-gray-200 px-4 py-2 transition-all focus:border-emerald-500 focus:outline-none"
-								/>
-							</div>
+					<div>
+						<label className="block text-sm font-medium text-stone-600 mb-1.5">
+							House Number
+						</label>
+						<input
+							type="text"
+							name="address.house"
+							value={editForm.address.house}
+							onChange={handleInputChange}
+							className="w-full rounded-lg border border-stone-300 px-4 py-2.5 transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
+						/>
+					</div>
 
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">
-									Road/Street
-								</label>
-								<input
-									type="text"
-									name="address.road"
-									value={editForm.address.road}
-									onChange={handleInputChange}
-									className="w-full rounded-lg border-2 border-gray-200 px-4 py-2 transition-all focus:border-emerald-500 focus:outline-none"
-								/>
-							</div>
+					<div>
+						<label className="block text-sm font-medium text-stone-600 mb-1.5">
+							Road/Street
+						</label>
+						<input
+							type="text"
+							name="address.road"
+							value={editForm.address.road}
+							onChange={handleInputChange}
+							className="w-full rounded-lg border border-stone-300 px-4 py-2.5 transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
+						/>
+					</div>
 
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">
-									Area/District
-								</label>
-								<input
-									type="text"
-									name="address.area"
-									value={editForm.address.area}
-									onChange={handleInputChange}
-									className="w-full rounded-lg border-2 border-gray-200 px-4 py-2 transition-all focus:border-emerald-500 focus:outline-none"
-								/>
-							</div>
+					<div>
+						<label className="block text-sm font-medium text-stone-600 mb-1.5">
+							Area/District
+						</label>
+						<input
+							type="text"
+							name="address.area"
+							value={editForm.address.area}
+							onChange={handleInputChange}
+							className="w-full rounded-lg border border-stone-300 px-4 py-2.5 transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
+						/>
+					</div>
 
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-1">
-									City
-								</label>
-								<input
-									type="text"
-									name="address.city"
-									value={editForm.address.city}
-									onChange={handleInputChange}
-									className="w-full rounded-lg border-2 border-gray-200 px-4 py-2 transition-all focus:border-emerald-500 focus:outline-none"
-								/>
-							</div>
-						</div>
+					<div>
+						<label className="block text-sm font-medium text-stone-600 mb-1.5">
+							City
+						</label>
+						<input
+							type="text"
+							name="address.city"
+							value={editForm.address.city}
+							onChange={handleInputChange}
+							className="w-full rounded-lg border border-stone-300 px-4 py-2.5 transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
+						/>
 					</div>
 				</div>
 
@@ -499,14 +594,14 @@ const AccountInfo = ({ user, onUserUpdate }) => {
 					<button
 						onClick={handleSave}
 						disabled={loading}
-						className="flex-1 bg-emerald-600 text-white py-2.5 rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50"
+						className="flex-1 bg-emerald-600 text-white py-2.5 rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50 transition"
 					>
 						{loading ? 'Saving...' : 'Save Changes'}
 					</button>
 					<button
 						onClick={handleCancel}
 						disabled={loading}
-						className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50"
+						className="flex-1 border border-stone-300 text-stone-700 py-2.5 rounded-lg font-semibold hover:bg-stone-50 disabled:opacity-50 transition"
 					>
 						Cancel
 					</button>
@@ -516,35 +611,37 @@ const AccountInfo = ({ user, onUserUpdate }) => {
 	}
 
 	return (
-		<div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mt-8">
-			<div className="flex justify-between items-center mb-4">
-				<h2 className="text-2xl font-semibold text-gray-900">
+		<div className="bg-white rounded-2xl shadow-sm border border-stone-200/60 p-6">
+			<div className="flex justify-between items-center mb-6">
+				<h2 className="text-xl font-bold text-stone-800 flex items-center gap-2">
+					<span className="text-stone-400">👤</span>
 					Account Information
 				</h2>
 				<button
 					onClick={() => setIsEditing(true)}
-					className="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-700 transition"
+					className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition"
 				>
-					Edit Account
+					Edit
 				</button>
 			</div>
-			<div className="space-y-3">
-				<InfoItem label="Name" value={user?.name} />
-				<InfoItem label="Email" value={user?.email} />
-				<InfoItem label="Phone" value={user?.phone} />
-				<InfoItem label="Role" value={user?.role} />
-				<InfoItem
-					label="Address"
-					value={formatAddress(user?.address)}
-				/>
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
+				<InfoRow label="Name" value={user?.name} />
+				<InfoRow label="Email" value={user?.email} />
+				<InfoRow label="Phone" value={user?.phone} />
+				<InfoRow label="Role" value={user?.role} capitalize />
+				<div className="md:col-span-2">
+					<InfoRow label="Address" value={formatAddress(user?.address)} />
+				</div>
 			</div>
 		</div>
 	);
 };
 
-const InfoItem = ({ label, value }) => (
-	<div>
-		<span className="text-gray-600">{label}:</span>
-		<span className="ml-2 font-semibold">{value || 'Not set'}</span>
+const InfoRow = ({ label, value, capitalize }) => (
+	<div className="flex flex-col">
+		<span className="text-sm text-stone-500 mb-0.5">{label}</span>
+		<span className={`font-medium text-stone-800 ${capitalize ? 'capitalize' : ''}`}>
+			{value || <span className="text-stone-400">Not set</span>}
+		</span>
 	</div>
 );
