@@ -21,6 +21,7 @@ const mealSelectionSchema = new Schema({
   },
   quantity: { type: Number, required: true, default: 1, min: 1 },
   price: { type: Number, required: true }, // Store price at time of subscription
+  paymentStatus: { type: String, enum: ["paid", "unpaid"], default: "unpaid" },
 });
 
 /**
@@ -41,7 +42,7 @@ const SubscriptionSchema = new Schema(
     endDate: { type: Date },
     status: {
       type: String,
-      enum: ["active", "paused", "cancelled", "expired"],
+      enum: ["active", "paused", "cancelled", "expired", "halted"],
       default: "active",
     },
     mealsPerWeek: { type: Number, default: 7 }, // default: daily meals

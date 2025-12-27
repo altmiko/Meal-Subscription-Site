@@ -14,8 +14,11 @@ const orderSchema = new mongoose.Schema(
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     items: [orderItemSchema],
     total: { type: Number, required: true },
-    status: { type: String, enum: ["pending", "accepted", "completed", "cancelled"], default: "pending" },
-    deliveryDateTime: { type: Date } // store both date and time
+    status: { type: String, enum: ["pending", "cooking", "ready", "completed", "cancelled"], default: "pending" },
+    deliveryDateTime: { type: Date }, // store both date and time
+    subscriptionId: { type: mongoose.Schema.Types.ObjectId, ref: "Subscription" }, // optional: links if it was a sub order
+    paymentStatus: { type: String, enum: ["paid", "unpaid"], default: "paid" },
+    isSubscription: { type: Boolean, default: false }
   },
   { timestamps: true }
 );

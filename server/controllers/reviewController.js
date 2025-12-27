@@ -17,12 +17,14 @@ export const addReview = async (req, res) => {
     }
 
     // Create or update review
-    // We force status to be pending if it's a new review or update
     const review = await Review.findOneAndUpdate(
       { restaurant: restaurantId, user: userId },
       { rating, comment, status: 'pending' },
       { new: true, upsert: true, runValidators: true }
     );
+
+    // Populate user info so frontend can show the name immediately
+    await review.populate("user", "name");
 
     // Recalculate restaurant rating (based on approved reviews only)
     await Review.getAverageRating(review.restaurant);

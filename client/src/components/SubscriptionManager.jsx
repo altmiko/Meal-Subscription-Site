@@ -116,7 +116,7 @@ export default function SubscriptionManager({ restaurantId: propRestaurantId }) 
         isRepeating,
       });
       
-      alert('Subscription created successfully!');
+      alert('Subscription created successfully! Your upfront payment for this week has been processed.');
       setShowCreateModal(false);
       setSelectedMeals({});
       fetchSubscriptions();
@@ -309,20 +309,41 @@ function SubscriptionCard({ subscription, onPause, onResume, onCancel }) {
               ▶️ Resume
             </button>
           )}
+          {subscription.status === 'halted' && (
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] text-red-500 font-bold animate-pulse mb-1">Insufficient Funds!</span>
+              <button
+                onClick={() => navigate('/wallet')}
+                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-semibold shadow-sm"
+              >
+                💰 Top Up Wallet
+              </button>
+            </div>
+          )}
           {!isCancelled && (
             <button
               onClick={() => onCancel(subscription._id)}
-              className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-semibold"
+              className="px-3 py-1 bg-stone-100 text-stone-500 rounded hover:bg-red-50 hover:text-red-600 text-sm font-semibold transition-colors"
             >
               ✕ Cancel
             </button>
           ) }
-          {/* <button
-            onClick={() => onCancel(subscription._id)}
-            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-semibold"
-          >
-            ✕ Cancel
-          </button> */}
+        </div>
+      </div>
+
+      <div className="bg-white/50 rounded-lg p-3 mb-4 border border-emerald-100">
+        <div className="flex items-center gap-2 text-xs text-emerald-800 font-bold mb-1">
+          <span className="text-sm">📅</span> Schedule Info
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-[10px] text-emerald-600 uppercase">Starts On</p>
+            <p className="text-xs font-bold text-gray-800">{new Date(subscription.startDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-emerald-600 uppercase">Daily Deduction</p>
+            <p className="text-xs font-bold text-gray-800">Variable based on meals</p>
+          </div>
         </div>
       </div>
       
@@ -416,26 +437,40 @@ function CreateSubscriptionModal({
             ))}
           </div>
 
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <div className="flex justify-between items-center">
-              <span className="font-semibold text-gray-900">Total Weekly Cost:</span>
-              <span className="text-2xl font-bold text-emerald-700">{totalPrice.toFixed(2)} BDT</span>
+          <div className="mt-6 p-4 bg-stone-50 rounded-xl border border-stone-100">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-semibold text-stone-700">Estimated Weekly Total:</span>
+              <span className="text-xl font-bold text-emerald-700">{totalPrice.toFixed(2)} BDT</span>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2 text-[11px] text-stone-500 leading-tight">
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span>Subscriptions start <strong>immediately</strong> from today.</span>
+              </div>
+              <div className="flex items-start gap-2 text-[11px] text-stone-500 leading-tight">
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span>Payment for the first week is <strong>charged upfront</strong> from your wallet.</span>
+              </div>
+              <div className="flex items-start gap-2 text-[11px] text-stone-500 leading-tight">
+                <span className="text-emerald-500 font-bold">✓</span>
+                <span>If your wallet balance is low, your subscription will be <strong>halted</strong> until you top up.</span>
+              </div>
             </div>
           </div>
 
           <div className="mt-6 flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold"
+              className="flex-1 px-4 py-2 border border-stone-200 rounded-xl hover:bg-stone-50 font-semibold text-stone-600 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={onCreate}
               disabled={creating || Object.keys(selectedMeals).length === 0}
-              className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-100 transition-all hover:shadow-emerald-200 active:scale-95"
             >
-              {creating ? 'Creating...' : 'Create Subscription'}
+              {creating ? 'Setting up...' : 'Start Subscription'}
             </button>
           </div>
         </div>

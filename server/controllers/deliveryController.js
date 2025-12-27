@@ -87,8 +87,11 @@ export const updateDeliveryLocation = async (req, res) => {
       if (validStatuses.includes(status)) {
         delivery.status = status;
 
-        // If delivery is completed, process referral reward
+        // If delivery is completed, process referral reward and update order status
         if (status === "delivered") {
+          // Update order status to completed
+          await Order.findByIdAndUpdate(delivery.order, { status: "completed" });
+
           try {
             const customer = await User.findById(delivery.customer);
             if (customer && customer.referredBy) {
@@ -206,13 +209,14 @@ export const getAvailableOffers = async (req, res) => {
     const offers = await Delivery.find({ 
       status: "unassigned",
       $or: [
-        { deliveryStaff: { $exists: false } },
-        { deliveryStaff: null }
       ]
     })
-      .populate("order", "total items restaurantId deliveryDateTime")
+      .populate({
+        path: "order", 
+        select: "total items restaurantId deliveryDateTime",
+        populate: { path: "restaurantId", select: "name location" }
+      })
       .populate("customer", "name phone address")
-      .populate("order.restaurantId", "name location")
       .sort({ createdAt: -1 });
 
     res.status(200).json({ success: true, offers });
@@ -268,7 +272,7 @@ export const acceptOffer = async (req, res) => {
     // Populate delivery details
     await delivery.populate([
       { path: "order", populate: { path: "restaurantId", select: "name location" } },
-      { path: "customer", select: "name phone location" }
+      { path: "customer", select: "name phone address" }
     ]);
 
     res.status(200).json({ success: true, delivery });

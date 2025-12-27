@@ -105,57 +105,6 @@ export default function CustomerDashboard() {
 		if (user && showFavorites) fetchFavorites();
 	}, [user, showFavorites]);
 
-	// Calculate next payment info
-	const getNextPaymentInfo = () => {
-		const activeSubscriptions = subscriptions.filter(s => s.status === 'active');
-		if (activeSubscriptions.length === 0) return null;
-
-		const totalWeekly = activeSubscriptions.reduce((sum, sub) => {
-			const subTotal = (sub.mealSelections || []).reduce((mealSum, meal) => {
-				return mealSum + ((meal.price || 0) * (meal.quantity || 1));
-			}, 0);
-			return sum + subTotal;
-		}, 0);
-
-		// Next Monday
-		const today = new Date();
-		const daysUntilMonday = (8 - today.getDay()) % 7 || 7;
-		const nextMonday = new Date(today);
-		nextMonday.setDate(today.getDate() + daysUntilMonday);
-
-		return {
-			amount: totalWeekly,
-			date: nextMonday.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
-		};
-	};
-
-	const nextPayment = getNextPaymentInfo();
-
-	const handleTestPayment = async () => {
-		if (!nextPayment) return;
-		
-		const confirm = window.confirm(`Pay ${nextPayment.amount} BDT for your active subscriptions now?`);
-		if (!confirm) return;
-
-		setLoading(true); // Reuse loading state or add a specific one? Reusing makes screen blank. Let's add a state or just use alert.
-		// Better: Add processing state. But for quickness, use alert interaction.
-
-		try {
-			const res = await axiosInstance.post('/api/subscriptions/trigger-payment');
-			if (res.data.success) {
-				alert(res.data.message);
-				// Refresh data
-				fetchWalletBalance();
-				fetchSubscriptions();
-			} else {
-				alert(res.data.message);
-			}
-		} catch (err) {
-			alert(err.response?.data?.message || "Payment failed");
-		} finally {
-			setLoading(false);
-		}
-	};
 
 	if (loading) {
 		return (
@@ -191,55 +140,22 @@ export default function CustomerDashboard() {
 							</div>
 						</div>
 
-						{/* Stats Cards */}
-						<div className="flex gap-4 lg:w-auto">
+						<div className="flex gap-4 lg:w-72">
 							{/* Balance Card */}
-							<div className="flex-1 lg:w-48 bg-white rounded-2xl p-5 shadow-sm border border-stone-200/60">
+							<div className="flex-1 bg-white rounded-2xl p-5 shadow-sm border border-stone-200/60">
 								<div className="flex items-center gap-3 mb-2">
 									<div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
 										<span className="text-lg">💳</span>
 									</div>
 									<span className="text-stone-500 text-sm font-medium">Wallet Balance</span>
 								</div>
-								<p className="text-2xl font-bold text-stone-800">{walletBalance.toFixed(0)} <span className="text-base font-normal text-stone-500">BDT</span></p>
+								<p className="text-3xl font-bold text-stone-800">{walletBalance.toFixed(0)} <span className="text-base font-normal text-stone-500">BDT</span></p>
 								<button 
 									onClick={() => navigate('/wallet')}
 									className="mt-3 text-emerald-600 text-sm font-medium hover:text-emerald-700 transition"
 								>
 									Add funds →
 								</button>
-							</div>
-
-							{/* Next Payment Card */}
-							<div className="flex-1 lg:w-48 bg-white rounded-2xl p-5 shadow-sm border border-stone-200/60">
-								<div className="flex items-center gap-3 mb-2">
-									<div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-										<span className="text-lg">📅</span>
-									</div>
-									<span className="text-stone-500 text-sm font-medium">Next Payment</span>
-								</div>
-								{nextPayment ? (
-									<>
-										<p className="text-2xl font-bold text-stone-800">{nextPayment.amount.toFixed(0)} <span className="text-base font-normal text-stone-500">BDT</span></p>
-										<p className="mt-1 text-stone-500 text-sm mb-3">{nextPayment.date}</p>
-										<button
-											onClick={handleTestPayment}
-											className="w-full py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition shadow-sm"
-										>
-											Pay Now (Test)
-										</button>
-									</>
-								) : (
-									<>
-										<p className="text-lg font-semibold text-stone-400">No active plans</p>
-										<button 
-											onClick={() => navigate('/restaurants')}
-											className="mt-2 text-emerald-600 text-sm font-medium hover:text-emerald-700 transition"
-										>
-											Browse restaurants →
-										</button>
-									</>
-								)}
 							</div>
 						</div>
 					</div>

@@ -5,6 +5,7 @@ import { FaBoxOpen, FaCheckCircle, FaClock, FaMapMarkerAlt, FaMotorcycle, FaTime
 
 const CustomerOrders = () => {
   const [orders, setOrders] = useState([]);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState(null);
@@ -20,18 +21,24 @@ const CustomerOrders = () => {
   };
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axiosInstance.get("/api/orders/my");
-        setOrders(response.data || []);
+        const [ordersRes, profileRes] = await Promise.all([
+            axiosInstance.get("/api/orders/my"),
+            axiosInstance.get("/api/auth/profile")
+        ]);
+        setOrders(ordersRes.data || []);
+        if (profileRes.data.success) {
+            setUser(profileRes.data.data.user);
+        }
       } catch (err) {
-        console.error("Failed to fetch orders:", err);
+        console.error("Failed to fetch data:", err);
         setError("Failed to load your orders. Please try again.");
       } finally {
         setLoading(false);
       }
     };
-    fetchOrders();
+    fetchData();
   }, []);
 
   const cancelOrder = async (orderId) => {
@@ -104,6 +111,7 @@ const CustomerOrders = () => {
                             fetchTracking={fetchTracking}
                             tracking={tracking[order._id]}
                             formatDeliveryAddress={formatDeliveryAddress}
+                            userAddress={user?.address}
                         />
                     ))}
                 </div>
@@ -131,6 +139,7 @@ const CustomerOrders = () => {
                             order={order} 
                             isUpcoming={false}
                             formatDeliveryAddress={formatDeliveryAddress} 
+                            userAddress={user?.address}
                         />
                     ))}
                 </div>
@@ -143,7 +152,7 @@ const CustomerOrders = () => {
   );
 };
 
-const OrderCard = ({ order, isUpcoming, cancelOrder, updatingId, fetchTracking, tracking, formatDeliveryAddress }) => {
+const OrderCard = ({ order, isUpcoming, cancelOrder, updatingId, fetchTracking, tracking, formatDeliveryAddress, userAddress }) => {
     const statusColors = {
         pending: "bg-amber-100 text-amber-700 border-amber-200",
         accepted: "bg-blue-100 text-blue-700 border-blue-200",
@@ -211,7 +220,7 @@ const OrderCard = ({ order, isUpcoming, cancelOrder, updatingId, fetchTracking, 
                     <h4 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-3">Delivery Details</h4>
                     <p className="flex items-start gap-2 mb-2 text-stone-600">
                         <FaMapMarkerAlt className="mt-1 text-emerald-500" />
-                        <span>{order.delivery?.address ? formatDeliveryAddress(order.delivery.address) : "No address provided"}</span>
+                        <span>{userAddress ? formatDeliveryAddress(userAddress) : (order.delivery?.address ? formatDeliveryAddress(order.delivery.address) : "No address provided")}</span>
                     </p>
                     {order.delivery?.deliveryStaff ? (
                         <p className="flex items-center gap-2 text-stone-600">

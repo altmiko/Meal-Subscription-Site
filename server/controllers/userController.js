@@ -14,6 +14,7 @@ export const getProfile = async (req, res) => {
 					phone: user.phone,
 					role: user.role,
 					address: user.address,
+					vehicleType: user.vehicleType,
 				},
 			},
 		});
@@ -34,6 +35,7 @@ export const updateProfile = async (req, res) => {
 		if (email) fieldsToUpdate.email = email;
 		if (phone) fieldsToUpdate.phone = phone;
 		if (address) fieldsToUpdate.address = address;
+		if (req.body.vehicleType) fieldsToUpdate.vehicleType = req.body.vehicleType;
 
 		// Check if email is already taken by another user
 		if (email) {
@@ -64,6 +66,7 @@ export const updateProfile = async (req, res) => {
 					phone: user.phone,
 					role: user.role,
 					address: user.address,
+					vehicleType: user.vehicleType,
 				},
 			},
 		});

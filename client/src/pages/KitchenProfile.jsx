@@ -130,14 +130,18 @@ export default function KitchenProfile() {
 				rating: reviewRating,
 				comment: reviewComment,
 			});
-			setReviews((prev) => [data, ...prev]);
+			
+			const newReview = data.review;
+			// Update local state: remove any existing review from this user and add the new one
+			setReviews((prev) => [newReview, ...prev.filter(r => r._id !== newReview._id)]);
+			
 			setReviewComment('');
 			setReviewRating(5);
 			setShowReviewForm(false);
-			alert('Review submitted!');
+			alert('Review submitted and is now pending admin approval!');
 		} catch (err) {
 			console.error(err);
-			alert('Failed to submit review');
+			alert(err.response?.data?.message || 'Failed to submit review');
 		} finally {
 			setReviewLoading(false);
 		}
@@ -298,14 +302,19 @@ export default function KitchenProfile() {
 								</div>
 							) : (
 								displayedReviews.map((review) => (
-									<div key={review._id} className="bg-white p-4 rounded-xl border border-stone-100 shadow-sm hover:shadow-md transition duration-300">
+									<div key={review._id || Math.random()} className="bg-white p-4 rounded-xl border border-stone-100 shadow-sm hover:shadow-md transition duration-300 relative overflow-hidden">
+										{review.status === 'pending' && (
+											<div className="absolute top-0 right-0 bg-amber-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-bl-lg uppercase tracking-wider z-10">
+												Pending Approval
+											</div>
+										)}
 										<div className="flex justify-between items-start mb-2">
 											<div className="flex items-center gap-2">
-												<div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
+												<div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs uppercase">
 													{review.user?.name?.charAt(0) || 'U'}
 												</div>
 												<div className="min-w-0">
-													<h4 className="font-bold text-stone-800 text-xs truncate max-w-[100px]">{review.user?.name || 'Foodie'}</h4>
+													<h4 className="font-bold text-stone-800 text-xs truncate max-w-[100px]">{review.user?.name || 'Verified User'}</h4>
 													<p className="text-[10px] text-stone-400">{new Date(review.createdAt).toLocaleDateString()}</p>
 												</div>
 											</div>
@@ -315,7 +324,7 @@ export default function KitchenProfile() {
 												))}
 											</div>
 										</div>
-										<p className="text-stone-600 text-xs leading-relaxed line-clamp-2">"{review.comment}"</p>
+										<p className="text-stone-600 text-xs leading-relaxed line-clamp-3 italic">"{review.comment}"</p>
 									</div>
 								))
 							)}

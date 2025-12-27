@@ -3,7 +3,7 @@ import Review from "../models/Reviews.js";
 import DeliveryStaffReview from "../models/DeliveryStaffReview.js";
 import { User } from "../models/User.js";
 import { protect } from "../middleware/authMiddleware.js";
-import { getTopReviews } from "../controllers/reviewController.js";
+import { getTopReviews, addReview } from "../controllers/reviewController.js";
 
 
 const router = express.Router();
@@ -75,42 +75,7 @@ router.get("/delivery-staff/:staffId", async (req, res) => {
 });
 
 // CREATE or UPDATE restaurant review
-router.post("/:restaurantId", protect, async (req, res) => {
-  try {
-    const { rating, comment } = req.body;
-    const { restaurantId } = req.params;
-
-    if (!rating || rating < 1 || rating > 5)
-      return res.status(400).json({ message: "Rating must be between 1 and 5" });
-
-    const review = await Review.findOneAndUpdate(
-      { restaurant: restaurantId, user: req.user.id },
-      { rating, comment },
-      { upsert: true, new: true, runValidators: true }
-    );
-
-    const stats = await Review.aggregate([
-      { $match: { restaurant: review.restaurant } },
-      {
-        $group: {
-          _id: "$restaurant",
-          avgRating: { $avg: "$rating" },
-          totalRatings: { $sum: 1 }
-        }
-      }
-    ]);
-
-    await User.findByIdAndUpdate(restaurantId, {
-      rating: stats[0] ? Number(stats[0].avgRating.toFixed(1)) : 0,
-      totalRatings: stats[0] ? stats[0].totalRatings : 0
-    });
-
-    res.status(200).json(review);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to submit review" });
-  }
-});
+router.post("/:restaurantId", protect, addReview);
 
 // GET top reviews (must be before /:restaurantId)
 router.get("/top", getTopReviews);

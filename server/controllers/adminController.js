@@ -277,20 +277,27 @@ export const updateDelivery = async (req, res) => {
 		const { id } = req.params;
 		const { status, deliveryStaff } = req.body;
 
-		const update = {};
-		if (status) update.status = status;
-		if (deliveryStaff != null) update.deliveryStaff = deliveryStaff;
-
-		const delivery = await Delivery.findByIdAndUpdate(id, update, {
-			new: true,
-			runValidators: true,
-		});
-
+		const delivery = await Delivery.findById(id);
 		if (!delivery) {
 			return res.status(404).json({ success: false, message: 'Delivery not found.' });
 		}
 
-		return res.status(200).json({ success: true, data: delivery });
+		const update = {};
+		if (status) {
+			update.status = status;
+		} else if (deliveryStaff && delivery.status === 'unassigned') {
+			// Auto-set status to assigned if staff is provided but status isn't explicitly changed from unassigned
+			update.status = 'assigned';
+		}
+
+		if (deliveryStaff != null) update.deliveryStaff = deliveryStaff;
+
+		const updatedDelivery = await Delivery.findByIdAndUpdate(id, update, {
+			new: true,
+			runValidators: true,
+		});
+
+		return res.status(200).json({ success: true, data: updatedDelivery });
 	} catch (error) {
 		return res.status(500).json({ success: false, message: error.message });
 	}

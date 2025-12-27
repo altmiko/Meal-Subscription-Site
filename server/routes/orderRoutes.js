@@ -110,6 +110,8 @@ router.post("/", protect, async (req, res) => {
 
     const saved = await order.save();
 
+    // Order is created as 'pending'. Delivery will be created only when restaurant marks it as 'ready'.
+
     // Process payment
     if (paymentMethod === "wallet") {
       // Deduct from wallet
@@ -236,48 +238,36 @@ router.patch("/:orderId/status", protect, async (req, res) => {
     const { orderId } = req.params;
     const { status, completionTime } = req.body;
 
-    if (!["pending", "accepted", "completed", "cancelled"].includes(status)) {
+    if (!["pending", "cooking", "ready", "completed", "cancelled"].includes(status)) {
       return res.status(400).json({ message: "Invalid status value" });
     }
 
     const order = await Order.findById(orderId).populate("userId");
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    // Helper to create an unassigned delivery when order is accepted
-    const createUnassignedDelivery = async () => {
-      const existing = await Delivery.findOne({ order: orderId });
-      if (existing) return existing;
+    // When status is changed to 'ready', create the unassigned delivery record
+    if (status === "ready" && order.status !== "ready") {
+      const existingDelivery = await Delivery.findOne({ order: orderId });
+      if (!existingDelivery) {
+        const customer = await User.findById(order.userId);
+        const address = customer?.address || {
+          house: "",
+          road: "",
+          area: "",
+          city: "",
+        };
 
-      const customer = await User.findById(order.userId);
-      const address = customer?.address || {
-        house: "",
-        road: "",
-        area: "",
-        city: "",
-      };
-
-      return Delivery.create({
-        order: orderId,
-        customer: order.userId,
-        address,
-        status: "unassigned",
-        completionTime: completionTime ? new Date(completionTime) : undefined,
-      });
-    };
-
-    // If order is being accepted, create unassigned delivery record
-    if (status === "accepted" && order.status === "pending") {
-      if (!completionTime) {
-        return res.status(400).json({ message: "Completion time is required when accepting an order" });
+        await Delivery.create({
+          order: orderId,
+          customer: order.userId,
+          address,
+          status: "unassigned",
+          completionTime: order.deliveryDateTime, // or a specific ready time
+        });
       }
-      await createUnassignedDelivery();
     }
 
-    // When the restaurant marks an order completed, order is ready for pickup
-    // Delivery staff can then pick it up and deliver it
-    // We don't automatically change delivery status here - staff will update it
-
-    // If order is cancelled, process refund if payment was made
+    // If order is cancelled, process refund
     if (status === "cancelled" && order.status !== "cancelled") {
       const payment = await Payment.findOne({
         order: orderId,
@@ -303,6 +293,9 @@ router.patch("/:orderId/status", protect, async (req, res) => {
           });
         }
       }
+
+      // Also cancel associated delivery if it exists
+      await Delivery.findOneAndUpdate({ order: orderId }, { status: "cancelled" });
     }
 
     order.status = status;
