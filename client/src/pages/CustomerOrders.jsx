@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "../api/axios";
+import { FaBoxOpen, FaCheckCircle, FaClock, FaMapMarkerAlt, FaMotorcycle, FaTimesCircle, FaStore, FaChevronRight, FaReceipt } from "react-icons/fa";
 
 const CustomerOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -15,87 +16,33 @@ const CustomerOrders = () => {
     const road = String(address.road ?? "").trim();
     const area = String(address.area ?? "").trim();
     const city = String(address.city ?? "").trim();
-
-    const houseRoad =
-      house && road
-        ? /^\d+$/.test(house) && /^\d+$/.test(road)
-          ? `${house}/${road}`
-          : `${house} ${road}`
-        : house || road;
-
-    return [houseRoad, area, city].filter(Boolean).join(", ");
+    return [house, road, area, city].filter(Boolean).join(", ");
   };
 
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const user = JSON.parse(localStorage.getItem("user"));
-        const token = localStorage.getItem("token");
-        
-        if (!user) {
-          setError("Please log in to view your orders.");
-          setLoading(false);
-          return;
-        }
-
-        if (!token) {
-          setError("Authentication token not found. Please log in again.");
-          setLoading(false);
-          return;
-        }
-
         const response = await axiosInstance.get("/api/orders/my");
         setOrders(response.data || []);
-        setError(""); // Clear any previous errors
       } catch (err) {
         console.error("Failed to fetch orders:", err);
-        console.error("Error details:", {
-          message: err.message,
-          response: err.response?.data,
-          status: err.response?.status,
-          statusText: err.response?.statusText,
-        });
-
-        // Provide more specific error messages
-        if (err.response?.status === 401) {
-          setError("Authentication failed. Please log in again.");
-        } else if (err.response?.status === 404) {
-          setError("Orders endpoint not found. Please check the server configuration.");
-        } else if (err.response?.data?.message) {
-          setError(`Failed to fetch orders: ${err.response.data.message}`);
-        } else if (err.message === "Network Error" || err.code === "ECONNREFUSED") {
-          setError("Cannot connect to server. Please check if the server is running.");
-        } else {
-          setError(`Failed to fetch orders: ${err.message || "Try again later."}`);
-        }
+        setError("Failed to load your orders. Please try again.");
       } finally {
         setLoading(false);
       }
     };
-
     fetchOrders();
   }, []);
 
   const cancelOrder = async (orderId) => {
     if (!window.confirm("Are you sure you want to cancel this order?")) return;
-    
     setUpdatingId(orderId);
     try {
-      // Update order status to cancelled (backend will handle refund if needed)
-      await axiosInstance.patch(`/api/orders/${orderId}/status`, {
-        status: "cancelled",
-      });
-
-      // Update local state
-      setOrders((prev) =>
-        prev.map((order) =>
-          order._id === orderId ? { ...order, status: "cancelled" } : order
-        )
-      );
-      alert("Order cancelled successfully. Refund processed if applicable.");
+      await axiosInstance.patch(`/api/orders/${orderId}/status`, { status: "cancelled" });
+      setOrders((prev) => prev.map((o) => o._id === orderId ? { ...o, status: "cancelled" } : o));
+      alert("Order cancelled successfully.");
     } catch (err) {
-      console.error("Failed to cancel order:", err.response?.data || err);
-      alert("Failed to cancel order. Try again.");
+      alert("Failed to cancel order.");
     } finally {
       setUpdatingId(null);
     }
@@ -103,206 +50,227 @@ const CustomerOrders = () => {
 
   const fetchTracking = async (orderId) => {
     try {
-      // Here we assume a 1:1 relation between order and delivery with the same id or mapped in backend.
-      // In a real system you'd look up delivery by order, but for this demo we call /api/deliveries/:id/track
       const { data } = await axiosInstance.get(`/api/deliveries/${orderId}/track`);
       setTracking((prev) => ({ ...prev, [orderId]: data }));
     } catch (err) {
-      console.error("Failed to fetch tracking:", err);
       alert("Tracking information not available yet.");
     }
   };
 
-  if (loading) return <p className="p-6 text-center text-gray-600">Loading orders...</p>;
-  if (error) return <p className="p-6 text-center text-red-500 font-semibold">{error}</p>;
-
-  const upcomingOrders = orders.filter(o => o.status === "pending" || o.status === "accepted");
-  const previousOrders = orders.filter(o => o.status === "completed");
-
-  const renderOrderCard = (order) => {
-    const _deliveryDate = order.deliveryDateTime
-      ? new Date(order.deliveryDateTime).toLocaleDateString()
-      : "N/A";
-    const _deliveryTime = order.deliveryDateTime
-      ? new Date(order.deliveryDateTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      : "N/A";
-    void _deliveryDate;
-    void _deliveryTime;
-
-    const trackingInfo = tracking[order._id];
-    const hasDelivery = order.delivery && order.delivery.status;
-
-    return (
-      <div key={order._id} className="border rounded-lg p-4 bg-white shadow">
-        <div className="flex justify-between items-start mb-2">
-          <div>
-            <p className="font-semibold text-lg">Order #{order._id.slice(-6)}</p>
-            <p className="text-sm text-gray-600">
-              {order.restaurantId?.name || "Restaurant"}
-            </p>
-          </div>
-          <span className={`px-2 py-1 rounded text-xs font-semibold ${
-            order.status === "completed" ? "bg-green-100 text-green-800" :
-            order.status === "accepted" ? "bg-blue-100 text-blue-800" :
-            order.status === "pending" ? "bg-yellow-100 text-yellow-800" :
-            "bg-red-100 text-red-800"
-          }`}>
-            {order.status.toUpperCase()}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 gap-1 mb-3 text-sm">
-          <div>
-            <span className="font-medium text-gray-600">Total:</span>{" "}
-            <span className="font-semibold">{order.total} tk</span>
-          </div>
-          <div>
-            <span className="font-medium text-gray-600">Payment:</span>{" "}
-            {order.payment ? (
-              <span
-                className={`${
-                  order.payment.status === "success" ? "text-green-600" : "text-yellow-600"
-                }`}
-              >
-                {order.payment.status === "success"
-                  ? "Successfull"
-                  : `${order.payment.method} (${order.payment.status})`}
-              </span>
-            ) : (
-              <span className="text-gray-400">Pending</span>
-            )}
-          </div>
-        </div>
-
-        <p className="text-gray-700 text-sm mb-2">
-          <span className="font-medium">Delivery Time:</span>{" "}
-          {order.delivery && order.delivery.status === "delivered"
-            ? new Date(order.delivery.updatedAt).toLocaleString()
-            : "Not delivered yet"}
-        </p>
-
-        {order.delivery && (
-          <div className="mb-2 p-2 bg-white rounded text-sm">
-            <p className="font-medium text-gray-700">Delivery Status:</p>
-            <p className="text-gray-600">
-              <span className={`font-semibold ${
-                order.delivery.status === "unassigned" ? "text-yellow-600" :
-                order.delivery.status === "assigned" ? "text-blue-600" :
-                order.delivery.status === "picked_up" ? "text-purple-600" :
-                order.delivery.status === "on_the_way" ? "text-indigo-600" :
-                order.delivery.status === "delivered" ? "text-green-600" :
-                "text-gray-600"
-              }`}>
-                {order.delivery.status === "unassigned" ? "UNASSIGNED" :
-                 order.delivery.status === "assigned" ? "ASSIGNED" :
-                 order.delivery.status.replace("_", " ").toUpperCase()}
-              </span>
-              {order.delivery.deliveryStaff && (
-                <span className="ml-2">• Staff: {order.delivery.deliveryStaff.name}</span>
-              )}
-              {order.delivery.status === "unassigned" && (
-                <span className="ml-2 text-yellow-600">(Waiting for delivery staff)</span>
-              )}
-            </p>
-            {order.delivery.address && (
-              <p className="text-gray-600 mt-1">
-                {formatDeliveryAddress(order.delivery.address)}
-              </p>
-            )}
-            {order.delivery.deliveryStaff?._id && order.delivery.status === "delivered" && (
-              <div className="mt-2">
-                <Link
-                  to={`/delivery-staff/${order.delivery.deliveryStaff._id}/add-review/${order._id}`}
-                  className="inline-block px-3 py-1 bg-amber-500 text-white rounded text-sm hover:bg-amber-600"
-                >
-                  Rate Delivery Staff
-                </Link>
-              </div>
-            )}
-          </div>
-        )}
-
-        <h4 className="mt-3 font-semibold text-sm">Items:</h4>
-        <ul className="list-disc ml-5 text-sm text-gray-700">
-          {order.items.map((item, i) => (
-            <li key={i}>
-              {item.itemId?.name || "Item"} — Qty: {item.quantity} — {item.price} BDT
-            </li>
-          ))}
-        </ul>
-
-        <p className="mt-2 text-xs text-gray-500">
-          Ordered: {new Date(order.createdAt).toLocaleString()}
-        </p>
-
-        {/* Tracking section */}
-        {hasDelivery && (
-          <div className="mt-3 pt-3 border-t">
-            <button
-              onClick={() => fetchTracking(order._id)}
-              className="px-3 py-1.5 bg-emerald-600 text-white rounded text-sm hover:bg-emerald-700 transition"
-            >
-              {trackingInfo ? "Refresh Tracking" : "Track Delivery"}
-            </button>
-            {trackingInfo && (
-              <div className="mt-2 text-sm text-gray-700 border rounded p-3 bg-white">
-                <p className="font-semibold mb-1">Live Tracking:</p>
-                <p>
-                  <span className="font-medium">Status:</span>{" "}
-                  <span className="capitalize">{trackingInfo.status?.replace("_", " ")}</span>
-                </p>
-                {trackingInfo.deliveryAddress && (
-                  <p className="mt-1">
-                    <span className="font-medium">Delivery Address:</span>{" "}
-                    {formatDeliveryAddress(trackingInfo.deliveryAddress)}
-                  </p>
-                )}
-                {trackingInfo.deliveryStaff && (
-                  <p className="mt-1">
-                    <span className="font-medium">Delivery Staff:</span> {trackingInfo.deliveryStaff.name}
-                    {trackingInfo.deliveryStaff.phone && ` • ${trackingInfo.deliveryStaff.phone}`}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Cancel button for pending orders */}
-        {order.status === "pending" && (
-          <button
-            onClick={() => cancelOrder(order._id)}
-            disabled={updatingId === order._id}
-            className="mt-3 px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 transition text-sm"
-          >
-            {updatingId === order._id ? "Cancelling..." : "Cancel Order"}
-          </button>
-        )}
-      </div>
-    );
-  };
-
-  return (
-    <div className="p-6 pt-24">
-      <h2 className="text-2xl font-bold mb-4">Upcoming Orders</h2>
-      {upcomingOrders.length > 0 ? (
-        <div className="space-y-4">
-          {upcomingOrders.map(renderOrderCard)}
-        </div>
-      ) : (
-        <p className="text-gray-600">No upcoming orders.</p>
-      )}
-
-      <h2 className="text-2xl font-bold mt-10 mb-4">Previous Orders</h2>
-      {previousOrders.length > 0 ? (
-        <div className="space-y-4">
-          {previousOrders.map(renderOrderCard)}
-        </div>
-      ) : (
-        <p className="text-gray-600">No previous orders.</p>
-      )}
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-stone-50">
+      <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-200 border-t-emerald-600"></div>
     </div>
   );
+
+  const upcomingOrders = orders.filter(o => ["pending", "accepted", "preparing", "ready", "on_the_way"].includes(o.status));
+  const previousOrders = orders.filter(o => ["completed", "delivered", "cancelled"].includes(o.status));
+
+  return (
+    <div className="min-h-screen bg-stone-50 pt-24 pb-12 px-4">
+      <div className="max-w-5xl mx-auto">
+        <div className="flex items-center gap-3 mb-8">
+            <div className="bg-emerald-100 p-3 rounded-xl text-emerald-600">
+                <FaReceipt className="text-2xl" />
+            </div>
+            <div>
+                <h1 className="text-3xl font-bold text-stone-800">My Orders</h1>
+                <p className="text-stone-500">Track current orders and view history</p>
+            </div>
+        </div>
+
+        {error && (
+            <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl mb-6 text-center">
+                {error}
+            </div>
+        )}
+
+        {/* Upcoming Orders */}
+        <div className="mb-12">
+            <h2 className="text-xl font-bold text-stone-800 mb-4 flex items-center gap-2">
+                <span className="w-2 h-8 bg-emerald-500 rounded-full"></span>
+                Active Orders
+            </h2>
+            
+            {upcomingOrders.length > 0 ? (
+                <div className="grid gap-6">
+                    {upcomingOrders.map(order => (
+                        <OrderCard 
+                            key={order._id} 
+                            order={order} 
+                            isUpcoming={true} 
+                            cancelOrder={cancelOrder} 
+                            updatingId={updatingId}
+                            fetchTracking={fetchTracking}
+                            tracking={tracking[order._id]}
+                            formatDeliveryAddress={formatDeliveryAddress}
+                        />
+                    ))}
+                </div>
+            ) : (
+                <div className="bg-white rounded-2xl border border-stone-200 p-8 text-center">
+                    <div className="w-16 h-16 bg-stone-100 text-stone-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">🍽️</div>
+                    <h3 className="font-bold text-stone-600">No active orders</h3>
+                    <p className="text-stone-400 text-sm">Hungry? Explore kitchens near you!</p>
+                    <Link to="/restaurants" className="inline-block mt-4 text-emerald-600 font-bold hover:underline">Browse Kitchens →</Link>
+                </div>
+            )}
+        </div>
+
+        {/* Previous Orders */}
+        <div>
+            <h2 className="text-xl font-bold text-stone-800 mb-4 flex items-center gap-2">
+                <span className="w-2 h-8 bg-stone-400 rounded-full"></span>
+                Past Orders
+            </h2>
+             {previousOrders.length > 0 ? (
+                <div className="grid gap-4 opacity-80 hover:opacity-100 transition-opacity duration-300">
+                    {previousOrders.map(order => (
+                        <OrderCard 
+                            key={order._id} 
+                            order={order} 
+                            isUpcoming={false}
+                            formatDeliveryAddress={formatDeliveryAddress} 
+                        />
+                    ))}
+                </div>
+             ) : (
+                <p className="text-stone-500 italic">No past orders found.</p>
+             )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const OrderCard = ({ order, isUpcoming, cancelOrder, updatingId, fetchTracking, tracking, formatDeliveryAddress }) => {
+    const statusColors = {
+        pending: "bg-amber-100 text-amber-700 border-amber-200",
+        accepted: "bg-blue-100 text-blue-700 border-blue-200",
+        preparing: "bg-indigo-100 text-indigo-700 border-indigo-200",
+        ready: "bg-purple-100 text-purple-700 border-purple-200",
+        on_the_way: "bg-orange-100 text-orange-700 border-orange-200",
+        completed: "bg-emerald-100 text-emerald-700 border-emerald-200",
+        delivered: "bg-emerald-100 text-emerald-700 border-emerald-200",
+        cancelled: "bg-red-100 text-red-700 border-red-200",
+    };
+
+    const statusIcons = {
+        pending: <FaClock />,
+        accepted: <FaCheckCircle />,
+        preparing: <FaStore />,
+        on_the_way: <FaMotorcycle />,
+        completed: <FaCheckCircle />,
+        delivered: <FaCheckCircle />,
+        cancelled: <FaTimesCircle />,
+    };
+
+    const isTrackingAvailable = ["accepted", "preparing", "ready", "on_the_way"].includes(order.status);
+
+    return (
+        <div className={`bg-white rounded-2xl border ${isUpcoming ? 'border-emerald-100 shadow-lg shadow-emerald-50' : 'border-stone-200'} overflow-hidden transition-all hover:shadow-md`}>
+            {/* Header */}
+            <div className="p-4 sm:p-6 border-b border-stone-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center text-stone-400 font-bold text-xl">
+                        {order.restaurantId?.name?.charAt(0) || <FaStore />}
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-stone-800 text-lg">{order.restaurantId?.name || "Unknown Kitchen"}</h3>
+                        <p className="text-stone-400 text-xs font-mono">#{order._id.slice(-6).toUpperCase()} • {new Date(order.createdAt).toLocaleDateString()}</p>
+                    </div>
+                </div>
+                <div className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2 border ${statusColors[order.status] || "bg-gray-100 text-gray-600"}`}>
+                    {statusIcons[order.status]} 
+                    {order.status.replace("_", " ")}
+                </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 sm:p-6 grid md:grid-cols-2 gap-6">
+                <div>
+                     <h4 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-3">Order Items</h4>
+                     <ul className="space-y-2">
+                        {order.items.map((item, i) => (
+                            <li key={i} className="flex justify-between text-sm text-stone-700 font-medium">
+                                <span className="flex items-center gap-2">
+                                    <span className="bg-stone-100 text-stone-600 text-xs w-5 h-5 flex items-center justify-center rounded">{item.quantity}x</span>
+                                    {item.itemId?.name || "Item"}
+                                </span>
+                                <span className="text-stone-500">{item.price * item.quantity} ৳</span>
+                            </li>
+                        ))}
+                     </ul>
+                     <div className="mt-4 pt-4 border-t border-stone-100 flex justify-between items-center">
+                        <span className="font-bold text-stone-800">Total Amount</span>
+                        <span className="font-bold text-emerald-600 text-lg">{order.total} ৳</span>
+                     </div>
+                </div>
+
+                <div className="bg-stone-50 rounded-xl p-4 text-sm">
+                    <h4 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-3">Delivery Details</h4>
+                    <p className="flex items-start gap-2 mb-2 text-stone-600">
+                        <FaMapMarkerAlt className="mt-1 text-emerald-500" />
+                        <span>{order.delivery?.address ? formatDeliveryAddress(order.delivery.address) : "No address provided"}</span>
+                    </p>
+                    {order.delivery?.deliveryStaff ? (
+                        <p className="flex items-center gap-2 text-stone-600">
+                            <FaMotorcycle className="text-emerald-500" />
+                            <span>Staff: <span className="font-bold">{order.delivery.deliveryStaff.name}</span></span>
+                        </p>
+                    ) : (
+                        order.status !== 'cancelled' && <p className="text-amber-500 text-xs italic">Assigning delivery staff...</p>
+                    )}
+                </div>
+            </div>
+
+            {/* Actions Footer */}
+            {isUpcoming && (order.status !== 'cancelled' && order.status !== 'delivered') && (
+                <div className="p-4 bg-stone-50 border-t border-stone-100 flex flex-wrap gap-3 justify-end">
+                    {order.status === "pending" && (
+                        <button
+                            onClick={() => cancelOrder(order._id)}
+                            disabled={updatingId === order._id}
+                            className="text-red-500 text-sm font-bold hover:bg-red-50 px-4 py-2 rounded-lg transition"
+                        >
+                            {updatingId === order._id ? "Cancelling..." : "Cancel Order"}
+                        </button>
+                    )}
+                    
+                    {isTrackingAvailable && (
+                        <button
+                            onClick={() => fetchTracking(order._id)}
+                            className="bg-emerald-600 text-white text-sm font-bold px-5 py-2 rounded-lg shadow-sm hover:bg-emerald-700 transition flex items-center gap-2"
+                        >
+                            <FaMotorcycle /> Track Order
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {/* Tracking Info Panel */}
+            {tracking && (
+                <div className="bg-stone-900 text-stone-300 p-4 text-sm animate-in slide-in-from-top-2">
+                    <div className="flex items-center gap-2 mb-2 text-emerald-400 font-bold">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Live Tracking
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <span className="block text-xs uppercase text-stone-500">Status</span>
+                            <span className="text-white capitalize">{tracking.status?.replace("_", " ")}</span>
+                        </div>
+                        {tracking.deliveryStaff && (
+                            <div>
+                                <span className="block text-xs uppercase text-stone-500">Courier</span>
+                                <span className="text-white">{tracking.deliveryStaff.name}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 };
 
 export default CustomerOrders;

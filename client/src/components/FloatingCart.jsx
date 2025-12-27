@@ -10,6 +10,7 @@ export default function FloatingCart() {
     return saved ? JSON.parse(saved) : [];
   });
   const [user, setUser] = useState(null);
+  const [isOpen, setIsOpen] = useState(true); // Toggle for mobile mainly, or desktop
 
   // Check if user is a customer
   useEffect(() => {
@@ -35,13 +36,9 @@ export default function FloatingCart() {
       }
     };
 
-    // Listen for storage events (when cart changes in other tabs/components)
     window.addEventListener('storage', handleStorageChange);
-    
-    // Listen for custom cart update event
     window.addEventListener('cartUpdated', handleStorageChange);
 
-    // Check cart on mount and periodically
     const interval = setInterval(handleStorageChange, 500);
 
     return () => {
@@ -56,18 +53,23 @@ export default function FloatingCart() {
     return null;
   }
 
+  // Don't show if cart is empty? No, show empty state or minimized icon?
+  // Let's show a minimized icon if empty or if toggled.
+  
+  if (cart.length === 0) return null; // Or show a small bubble. Let's hide if empty for cleaner UI.
+
   const totalPrice = cart.reduce(
     (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
     0
   );
 
+  const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+
   const removeItem = (index) => {
     const newCart = cart.filter((_, i) => i !== index);
     setCart(newCart);
     localStorage.setItem("cart", JSON.stringify(newCart));
-    // Dispatch event to notify other components
     window.dispatchEvent(new Event('cartUpdated'));
-    // Also trigger storage event for cross-tab sync
     window.dispatchEvent(new StorageEvent('storage', { key: 'cart' }));
   };
 
@@ -82,113 +84,104 @@ export default function FloatingCart() {
     setCart(newCart);
     localStorage.setItem("cart", JSON.stringify(newCart));
     window.dispatchEvent(new Event('cartUpdated'));
-    // Also trigger storage event for cross-tab sync
     window.dispatchEvent(new StorageEvent('storage', { key: 'cart' }));
   };
 
   return (
-    <div className="fixed right-2 md:right-4 bottom-20 md:bottom-auto md:top-1/2 md:-translate-y-1/2 z-50 w-[calc(100vw-1rem)] md:w-80 max-w-sm max-h-[80vh] flex flex-col bg-white rounded-lg shadow-2xl border border-gray-200">
-      {/* Header */}
-      <div className="bg-emerald-600 text-white p-4 rounded-t-lg">
-        <h3 className="font-bold text-lg">Your Cart</h3>
+    <>
+      {/* Mobile/Desktop Toggle Button (Visible when closed) */}
+      <div className={`fixed bottom-4 right-4 z-50 ${isOpen ? 'hidden' : 'block'}`}>
+        <button 
+            onClick={() => setIsOpen(true)}
+            className="bg-emerald-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center relative hover:bg-emerald-700 transition transform hover:scale-105"
+        >
+            <span className="text-2xl">🛒</span>
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white">{totalItems}</span>
+        </button>
       </div>
 
-      {/* Cart Items */}
-      <div className="flex-1 overflow-y-auto p-4">
-        {cart.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-12 w-12 mx-auto mb-2 text-gray-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-              />
-            </svg>
-            <p>Your cart is empty</p>
+      {/* Cart Container */}
+      <div className={`fixed right-4 bottom-4 md:bottom-auto md:top-24 z-50 w-[calc(100vw-2rem)] md:w-96 max-h-[80vh] flex flex-col bg-white rounded-2xl shadow-2xl border border-stone-200 transition-all duration-300 transform origin-bottom-right md:origin-top-right ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-90 opacity-0 translate-y-10 pointer-events-none'}`}>
+        
+        {/* Header - Click to Collapse */}
+        <div 
+            onClick={() => setIsOpen(false)}
+            className="bg-gradient-to-r from-emerald-700 to-teal-600 text-white p-5 rounded-t-2xl flex justify-between items-center shadow-md cursor-pointer hover:bg-emerald-800 transition-colors group"
+        >
+          <div className="flex items-center gap-3">
+             <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm group-hover:bg-white/30 transition">
+                <span className="text-xl">🛒</span>
+             </div>
+             <div>
+                <h3 className="font-bold text-lg leading-tight flex items-center gap-2">
+                    Your Cart 
+                    <span className="text-white/60 text-xs font-normal border border-white/20 px-1.5 py-0.5 rounded hidden md:inline-block md:opacity-0 md:group-hover:opacity-100 transition">Hide</span>
+                </h3>
+                <p className="text-emerald-100 text-xs font-medium">{totalItems} items • {totalPrice} BDT</p>
+             </div>
           </div>
-        ) : (
-          <div className="space-y-3">
+          <button className="text-white/80 hover:text-white p-2">✕</button>
+        </div>
+
+        {/* Cart Items */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-stone-50 min-h-[200px] max-h-[50vh]">
             {cart.map((item, index) => (
               <div
                 key={index}
-                className="border-b border-gray-200 pb-3 last:border-b-0"
+                className="bg-white p-3 rounded-xl border border-stone-100 shadow-sm flex gap-3 group hover:border-emerald-200 transition-colors"
               >
-                <div className="flex gap-2">
+                <div className="w-16 h-16 rounded-lg bg-stone-100 overflow-hidden shrink-0">
                   <img
                     src={item.imageUrl || FALLBACK_IMAGE}
                     alt={item.name}
-                    className="w-16 h-16 object-cover rounded"
+                    className="w-full h-full object-cover"
                   />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-sm text-gray-900 truncate">
-                      {item.name}
-                    </h4>
-                    <p className="text-xs text-gray-500 truncate">
-                      {item.day || "N/A"} • {item.mealType || "N/A"}
-                    </p>
-                    <div className="flex items-center justify-between mt-1">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() =>
-                            updateQuantity(index, (item.quantity || 1) - 1)
-                          }
-                          className="bg-gray-200 hover:bg-gray-300 rounded px-1.5 py-0.5 text-xs"
-                        >
-                          -
-                        </button>
-                        <span className="text-xs px-1">{item.quantity || 1}</span>
-                        <button
-                          onClick={() =>
-                            updateQuantity(index, (item.quantity || 1) + 1)
-                          }
-                          className="bg-gray-200 hover:bg-gray-300 rounded px-1.5 py-0.5 text-xs"
-                        >
-                          +
-                        </button>
-                      </div>
-                      <p className="text-sm font-bold text-emerald-700">
-                        {(item.price || 0) * (item.quantity || 1)} BDT
-                      </p>
+                </div>
+                
+                <div className="flex-1 min-w-0 flex flex-col justify-between">
+                    <div>
+                        <div className="flex justify-between items-start">
+                            <h4 className="font-bold text-stone-800 text-sm truncate">{item.name}</h4>
+                            <button onClick={() => removeItem(index)} className="text-stone-400 hover:text-red-500 transition px-1">×</button>
+                        </div>
+                        <p className="text-xs text-stone-500 truncate capitalize">{item.day} • {item.mealType}</p>
                     </div>
-                    <button
-                      onClick={() => removeItem(index)}
-                      className="text-red-500 text-xs mt-1 hover:underline"
-                    >
-                      Remove
-                    </button>
-                  </div>
+
+                    <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center bg-stone-100 rounded-lg p-0.5">
+                            <button 
+                                onClick={() => updateQuantity(index, (item.quantity || 1) - 1)}
+                                className="w-6 h-6 flex items-center justify-center text-stone-500 hover:bg-white hover:text-emerald-600 rounded-md transition font-bold"
+                            >-</button>
+                            <span className="text-xs font-bold text-stone-700 w-6 text-center">{item.quantity}</span>
+                            <button 
+                                onClick={() => updateQuantity(index, (item.quantity || 1) + 1)}
+                                className="w-6 h-6 flex items-center justify-center text-stone-500 hover:bg-white hover:text-emerald-600 rounded-md transition font-bold"
+                            >+</button>
+                        </div>
+                        <span className="font-bold text-emerald-700 text-sm">{(item.price || 0) * (item.quantity || 1)} ৳</span>
+                    </div>
                 </div>
               </div>
             ))}
-          </div>
-        )}
-      </div>
+        </div>
 
-      {/* Footer */}
-      {cart.length > 0 && (
-        <div className="border-t border-gray-200 p-4 bg-gray-50 rounded-b-lg">
-          <div className="flex justify-between items-center mb-3">
-            <span className="font-semibold text-gray-900">Total:</span>
-            <span className="text-lg font-bold text-emerald-700">
-              {totalPrice.toFixed(2)} BDT
+        {/* Footer */}
+        <div className="p-5 border-t border-stone-100 bg-white rounded-b-2xl shadow-[0_-5px_15px_rgba(0,0,0,0.02)]">
+          <div className="flex justify-between items-end mb-4">
+            <span className="text-stone-500 text-sm font-medium">Total Amount</span>
+            <span className="text-2xl font-bold text-stone-800">
+              {totalPrice.toFixed(0)} <span className="text-sm text-stone-400 font-normal">BDT</span>
             </span>
           </div>
           <Link
             to="/cart"
-            className="block w-full bg-emerald-600 text-white text-center py-2 rounded-lg hover:bg-emerald-700 transition font-semibold"
+            className="block w-full bg-emerald-600 text-white text-center py-3.5 rounded-xl hover:bg-emerald-700 transition font-bold shadow-lg shadow-emerald-200 hover:shadow-xl hover:translate-y-px"
           >
-            View Cart & Checkout
+            Checkout
           </Link>
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
-
