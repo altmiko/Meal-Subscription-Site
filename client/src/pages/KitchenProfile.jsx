@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axiosInstance from '../api/axios';
 import {
 	FaMapMarkerAlt,
@@ -8,7 +8,6 @@ import {
 	FaTruck,
 	FaHeart,
 	FaAward,
-	FaUtensils,
 } from 'react-icons/fa';
 import FloatingCart from '../components/FloatingCart';
 import SubscriptionManager from '../components/SubscriptionManager';
@@ -27,6 +26,7 @@ const DAYS = [
 
 export default function KitchenProfile() {
 	const { id } = useParams();
+	const navigate = useNavigate();
 	const [kitchen, setKitchen] = useState(null);
 	const [menuItems, setMenuItems] = useState([]);
 	const [loading, setLoading] = useState(true);
@@ -34,6 +34,8 @@ export default function KitchenProfile() {
 	const [selectedItem, setSelectedItem] = useState(null);
 	const [showItemModal, setShowItemModal] = useState(false);
 	const [user, setUser] = useState(null);
+	const [walletBalance, setWalletBalance] = useState(0);
+	const [nextPayment, setNextPayment] = useState(null);
 	const [cart, setCart] = useState(() => {
 		const saved = localStorage.getItem('cart');
 		return saved ? JSON.parse(saved) : [];
@@ -46,11 +48,50 @@ export default function KitchenProfile() {
 			try {
 				const parsedUser = JSON.parse(userData);
 				setUser(parsedUser);
+				fetchWalletAndSubscriptions(parsedUser);
 			} catch (err) {
 				console.error('Error parsing user data:', err);
 			}
 		}
 	}, []);
+
+	const fetchWalletAndSubscriptions = async (currentUser) => {
+		try {
+			// Wallet
+			const walletRes = await axiosInstance.get('/api/wallet');
+			if (walletRes.data.success) {
+				setWalletBalance(walletRes.data.walletBalance || 0);
+			}
+
+			// Subscriptions for next payment
+			const subRes = await axiosInstance.get('/api/subscriptions');
+			if (subRes.data.success) {
+				const subs = subRes.data.data || [];
+				const activeSubs = subs.filter(s => s.status === 'active');
+				if (activeSubs.length > 0) {
+					const totalWeekly = activeSubs.reduce((sum, sub) => {
+						const subTotal = (sub.mealSelections || []).reduce((mealSum, meal) => {
+							return mealSum + ((meal.price || 0) * (meal.quantity || 1));
+						}, 0);
+						return sum + subTotal;
+					}, 0);
+
+					const today = new Date();
+					const daysUntilMonday = (8 - today.getDay()) % 7 || 7;
+					const nextMonday = new Date(today);
+					nextMonday.setDate(today.getDate() + daysUntilMonday);
+
+					setNextPayment({
+						amount: totalWeekly,
+						date: nextMonday.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+					});
+				}
+			}
+		} catch (err) {
+			console.error("Failed to fetch user data for header", err);
+		}
+	};
+
 
 	// Check if user is a customer
 	const isCustomer = user && user.role === 'customer';
@@ -60,16 +101,12 @@ export default function KitchenProfile() {
 	const [reviewComment, setReviewComment] = useState('');
 	const [reviewLoading, setReviewLoading] = useState(false);
 	const [reviewError, setReviewError] = useState(null);
-	void reviews;
-	void reviewLoading;
-	void reviewError;
 
 	const todayIndex = new Date().getDay();
 
 	// Persist cart
 	useEffect(() => {
 		localStorage.setItem('cart', JSON.stringify(cart));
-		// Dispatch event to notify FloatingCart
 		window.dispatchEvent(new Event('cartUpdated'));
 	}, [cart]);
 
@@ -82,10 +119,10 @@ export default function KitchenProfile() {
 		const itemWithDelivery = {
 			...item,
 			quantity: 1,
-			date: deliveryDate.toISOString(), // Use 'date' instead of 'deliveryDate'
-			deliveryDate: deliveryDate.toISOString(), // Keep for backward compatibility
-			restaurant: id, // Add restaurant ID
-			restaurantId: id, // Also add restaurantId for consistency
+			date: deliveryDate.toISOString(),
+			deliveryDate: deliveryDate.toISOString(),
+			restaurant: id,
+			restaurantId: id,
 		};
 
 		const exists = cart.some(
@@ -119,7 +156,7 @@ export default function KitchenProfile() {
 					...item,
 					quantity: 1,
 					date: deliveryDate.toISOString(),
-					deliveryDate: deliveryDate.toISOString(), // Keep for backward compatibility
+					deliveryDate: deliveryDate.toISOString(),
 					restaurant: id,
 					restaurantId: id,
 				};
@@ -215,7 +252,6 @@ export default function KitchenProfile() {
 			setReviewLoading(false);
 		}
 	};
-	void submitReview;
 
 	// Escape key to close modal
 	useEffect(() => {
@@ -256,10 +292,10 @@ export default function KitchenProfile() {
 
 	if (loading)
 		return (
-			<div className="min-h-screen flex items-center justify-center pt-20 bg-gray-50">
+			<div className="min-h-screen flex items-center justify-center pt-20 bg-stone-50">
 				<div className="text-center">
 					<div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-200 border-t-emerald-600 mx-auto mb-4"></div>
-					<p className="text-gray-600 text-lg">
+					<p className="text-stone-600 text-lg">
 						Loading kitchen details...
 					</p>
 				</div>
@@ -268,13 +304,13 @@ export default function KitchenProfile() {
 
 	if (error)
 		return (
-			<div className="min-h-screen flex items-center justify-center pt-20 p-4 bg-gray-50">
+			<div className="min-h-screen flex items-center justify-center pt-20 p-4 bg-stone-50">
 				<div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
 					<div className="text-5xl mb-4 text-red-500">⚠️</div>
-					<h2 className="text-2xl font-bold text-gray-900 mb-3">
+					<h2 className="text-2xl font-bold text-stone-900 mb-3">
 						Error Loading Kitchen
 					</h2>
-					<p className="text-gray-600 mb-6">{error}</p>
+					<p className="text-stone-600 mb-6">{error}</p>
 					<button
 						onClick={() => window.location.reload()}
 						className="bg-emerald-600 text-white px-6 py-3 rounded-lg font-semibold shadow-sm hover:bg-emerald-700 transition-all duration-300"
@@ -287,12 +323,12 @@ export default function KitchenProfile() {
 
 	if (!kitchen)
 		return (
-			<div className="min-h-screen flex items-center justify-center pt-20 bg-gray-50">
+			<div className="min-h-screen flex items-center justify-center pt-20 bg-stone-50">
 				<div className="text-center">
-					<h2 className="text-2xl font-bold text-gray-900 mb-2">
+					<h2 className="text-2xl font-bold text-stone-900 mb-2">
 						Kitchen Not Found
 					</h2>
-					<p className="text-gray-600">
+					<p className="text-stone-600">
 						The restaurant you're looking for doesn't exist.
 					</p>
 				</div>
@@ -300,240 +336,231 @@ export default function KitchenProfile() {
 		);
 
 	return (
-		<div className="min-h-screen bg-gray-50">
-			{/* Action Bar */}
-			<section className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
-				<div className="max-w-7xl mx-auto px-4 py-3 flex gap-3 justify-end">
-					<Link
-						to={`/restaurants/${id}/add-review`}
-						className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition-colors flex items-center gap-2"
-					>
-						<FaStar /> Add Review
-					</Link>
-					<Link
-						to={`/restaurants/${id}/reviews`}
-						className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-200 transition-colors"
-					>
-						View Reviews
-					</Link>
-				</div>
-			</section>
-
-			{/* Compact Hero Section */}
-			<section className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-4 py-8">
-				<div className="max-w-7xl mx-auto">
-					<div className="flex flex-col md:flex-row items-center justify-between gap-6">
-						<div className="flex-1">
-							<div className="flex items-center gap-2 mb-3">
-								<FaAward className="text-yellow-300" />
-								<span className="text-sm font-semibold bg-white/20 px-2 py-1 rounded">
-									Premium Kitchen
-								</span>
-							</div>
-							<h1 className="text-3xl md:text-4xl font-bold mb-2">
-								{kitchen.name}
-							</h1>
-							<p className="text-white/90 mb-4 max-w-2xl">
-								{kitchen.description ||
-									'Serving fresh, delicious meals crafted with passion and the finest ingredients.'}
-							</p>
-							<div className="flex items-center gap-4 text-sm">
-								<div className="flex items-center gap-1">
-									<FaStar className="text-yellow-300" />
-									<span>4.8 Rating</span>
-								</div>
-								<div className="flex items-center gap-1">
-									<FaTruck />
-									<span>Free Delivery</span>
-								</div>
-								<div className="flex items-center gap-1">
-									<span>30-45 min</span>
-								</div>
-							</div>
-						</div>
-						{isCustomer && (
-							<div className="flex gap-3">
-								<Link
-									to="/cart"
-									className="bg-white text-emerald-700 px-6 py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
-								>
-									<span>🛒</span>
-									View Cart ({cart.length})
-								</Link>
-								<button className="bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-lg font-bold border border-white/30 hover:bg-white/30 transition-all flex items-center gap-2">
-									<FaHeart /> Save
-								</button>
-							</div>
-						)}
-					</div>
-				</div>
-			</section>
-
+		<div className="min-h-screen bg-gradient-to-br from-[#e4f4e7] via-[#f5f9f6] to-[#e1efe5] pt-12">
+			
 			<div className="max-w-7xl mx-auto px-4 py-8">
-				{/* Kitchen Info - Compact */}
-				<section className="mb-8">
-					<div className="bg-white rounded-xl shadow-md p-6">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-							<div>
-								<h2 className="text-xl font-bold text-gray-900 mb-3">
-									About {kitchen.name}
-								</h2>
-								<p className="text-gray-600 mb-4">
-									{kitchen.about ||
-										`Welcome to ${kitchen.name}, where culinary artistry meets passion. We believe that great food starts with the finest ingredients, sourced locally and prepared with love.`}
-								</p>
-								<div className="flex flex-wrap gap-4">
-									<div className="flex items-center gap-2 text-sm text-gray-600">
-										<span className="text-emerald-600">
-											✓
-										</span>{' '}
-										Fresh Ingredients
-									</div>
-									<div className="flex items-center gap-2 text-sm text-gray-600">
-										<span className="text-emerald-600">
-											✓
-										</span>{' '}
-										Chef's Special
-									</div>
-									<div className="flex items-center gap-2 text-sm text-gray-600">
-										<span className="text-emerald-600">
-											✓
-										</span>{' '}
-										Fast Delivery
-									</div>
-								</div>
+				
+				{/* Top Header Section with Widgets */}
+				{user && (
+					<div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+						{/* Welcome / Title */}
+						<div className="bg-gradient-to-r from-emerald-700 to-teal-600 rounded-2xl p-6 text-white shadow-lg flex flex-col justify-center relative overflow-hidden">
+							<div className="z-10">
+								<h1 className="text-2xl font-bold mb-1 line-clamp-1">{kitchen.name}</h1>
+								<p className="text-emerald-100 text-sm">Explore their menu and subscribe.</p>
 							</div>
-							<div>
-								<h3 className="text-xl font-bold text-gray-900 mb-3">
-									Contact Info
-								</h3>
-								<div className="space-y-3">
-									{kitchen.location && (
-										<div className="flex items-start gap-3">
-											<FaMapMarkerAlt className="text-emerald-600 mt-1" />
-											<div>
-												<h4 className="font-semibold text-gray-900">
-													Address
-												</h4>
-												<p className="text-gray-600 text-sm">
-													{formatAddress(
-														kitchen.location
-													)}
-												</p>
-											</div>
-										</div>
-									)}
-									{kitchen.phone && (
-										<div className="flex items-center gap-3">
-											<FaPhone className="text-emerald-600" />
-											<div>
-												<h4 className="font-semibold text-gray-900">
-													Phone
-												</h4>
-												<p className="text-gray-600 text-sm">
-													{kitchen.phone}
-												</p>
-											</div>
-										</div>
-									)}
-									<div className="bg-emerald-50 p-3 rounded-lg">
-										<h4 className="font-semibold text-gray-900">
-											Hours
-										</h4>
-										<p className="text-gray-600 text-sm">
-											Mon-Sat: 10AM-10PM, Sun: 11AM-9PM
-										</p>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</section>
-
-				{/* Menu Section - Compact */}
-				<section className="mb-8">
-					<div className="flex items-center justify-between mb-6">
-						<h2 className="text-2xl font-bold text-gray-900">
-							Our Menu
-						</h2>
-						{menuItems.length > 0 && (
-							<p className="text-gray-600">
-								{menuItems.length} items available
-							</p>
-						)}
-					</div>
-
-					{menuItems.length === 0 ? (
-						<div className="bg-white rounded-xl shadow-md p-8 text-center">
-							<div className="text-6xl mb-4 text-gray-300">
+							<div className="absolute right-0 bottom-0 opacity-10 text-9xl transform translate-x-4 translate-y-4">
 								🍽️
 							</div>
-							<h3 className="text-xl font-bold text-gray-900 mb-2">
-								Menu Coming Soon
-							</h3>
-							<p className="text-gray-600">
-								This kitchen is preparing something amazing.
-								Check back soon!
-							</p>
 						</div>
-					) : (
-						<div className="space-y-6">
-							{DAYS.map((day) => (
-								<DayMenu
-									key={day}
-									day={day}
-									items={groupedMenuItems[day]}
-									openItemModal={openItemModal}
-									addToCart={addToCart}
-									isCustomer={isCustomer}
-								/>
-							))}
-						</div>
-					)}
-				</section>
 
-				{/* Quick Add - Compact */}
-				{menuItems.length > 0 && isCustomer && (
-					<section className="mb-8">
-						<div className="bg-emerald-600 rounded-xl p-6 text-white">
-							<h3 className="text-lg font-bold mb-2">
-								Quick Order
-							</h3>
-							<p className="text-emerald-100 text-sm mb-4">
-								Add all meals for the rest of the week
-							</p>
-							<div className="grid grid-cols-2 gap-4">
-								<button
-									onClick={addAllLunch}
-									className="bg-white text-emerald-700 px-4 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
-								>
-									🍽️ All Lunch
-								</button>
-								<button
-									onClick={addAllDinner}
-									className="bg-white text-emerald-700 px-4 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
-								>
-									🌙 All Dinner
+						{/* Wallet Widget */}
+						<div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-200/60 flex items-center justify-between">
+							<div>
+								<p className="text-stone-500 text-sm font-medium mb-1">Wallet Balance</p>
+								<p className="text-2xl font-bold text-stone-800">{walletBalance.toFixed(0)} <span className="text-sm font-normal text-stone-500">BDT</span></p>
+								<button onClick={() => navigate('/wallet')} className="text-emerald-600 text-sm font-medium hover:text-emerald-700 transition mt-1">
+									Add funds →
 								</button>
 							</div>
+							<div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-2xl">
+								💳
+							</div>
 						</div>
-					</section>
+
+						{/* Next Payment Widget */}
+						<div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-200/60 flex items-center justify-between">
+							<div>
+								<p className="text-stone-500 text-sm font-medium mb-1">Next Payment</p>
+								{nextPayment ? (
+									<>
+										<p className="text-2xl font-bold text-stone-800">{nextPayment.amount.toFixed(0)} <span className="text-sm font-normal text-stone-500">BDT</span></p>
+										<p className="text-stone-500 text-xs mt-1">{nextPayment.date}</p>
+									</>
+								) : (
+									<p className="text-lg font-semibold text-stone-400">No active plans</p>
+								)}
+							</div>
+							<div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-2xl">
+								📅
+							</div>
+						</div>
+					</div>
 				)}
 
-				{/* Subscription Section - Kept Exactly the Same */}
-				<section className="mb-8">
-					<div className="bg-white rounded-xl shadow-md p-6">
-						<h2 className="text-2xl font-bold text-gray-900 mb-4">
-							Meal Subscriptions
-						</h2>
-						<p className="text-gray-600 mb-4">
-							Subscribe to get meals delivered automatically each
-							week. Choose specific meals for each day or package
-							all lunches/dinners.
-						</p>
-						<SubscriptionManager restaurantId={id} />
+				<div className="flex flex-col lg:flex-row gap-8">
+					{/* Left Column: Info & Menu */}
+					<div className="flex-1 min-w-0">
+						
+						{/* Kitchen Hero Card */}
+						<div className="bg-white rounded-2xl shadow-sm border border-stone-200/60 overflow-hidden mb-8">
+							<div className="relative h-48 bg-emerald-50">
+								<img 
+									src={kitchen.imageUrl || FALLBACK_IMAGE} 
+									alt={kitchen.name}
+									onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = FALLBACK_IMAGE; }}
+									className="w-full h-full object-cover"
+								/>
+								<div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
+									<div className="p-6 text-white w-full">
+										<h1 className="text-4xl font-bold mb-2">{kitchen.name}</h1>
+										<div className="flex items-center gap-4 text-sm font-medium">
+											<span className="flex items-center gap-1 bg-white/20 px-2 py-1 rounded backdrop-blur-md">
+												<FaStar className="text-yellow-400" /> {kitchen.rating?.toFixed(1) || 'New'} ({kitchen.totalRatings || 0})
+											</span>
+											<span className="flex items-center gap-1">
+												<FaMapMarkerAlt /> {kitchen.location?.city || 'Location'}
+											</span>
+											<span className="flex items-center gap-1">
+												<FaTruck /> Free Delivery
+											</span>
+										</div>
+									</div>
+								</div>
+							</div>
+							
+							<div className="p-6">
+								<p className="text-stone-600 mb-6 leading-relaxed">
+									{kitchen.about || "Welcome to our kitchen! We serve fresh, home-cooked meals prepared with love and the finest ingredients."}
+								</p>
+								
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-stone-500">
+									<div className="flex items-center gap-3 p-3 bg-stone-50 rounded-lg">
+										<FaMapMarkerAlt className="text-emerald-600 text-lg" />
+										<span>{formatAddress(kitchen.location)}</span>
+									</div>
+									<div className="flex items-center gap-3 p-3 bg-stone-50 rounded-lg">
+										<FaPhone className="text-emerald-600 text-lg" />
+										<span>{kitchen.phone || "Not available"}</span>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						{/* Menu Section */}
+						<div className="mb-8">
+							<div className="flex items-center justify-between mb-6">
+								<h2 className="text-2xl font-bold text-stone-800">Weekly Menu</h2>
+								{isCustomer && menuItems.length > 0 && (
+									<div className="flex gap-2">
+										<button onClick={addAllLunch} className="text-sm font-semibold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg hover:bg-emerald-100 transition">
+											+ All Lunch
+										</button>
+										<button onClick={addAllDinner} className="text-sm font-semibold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg hover:bg-emerald-100 transition">
+											+ All Dinner
+										</button>
+									</div>
+								)}
+							</div>
+
+							{menuItems.length === 0 ? (
+								<div className="bg-white rounded-2xl shadow-sm border border-stone-200/60 p-12 text-center">
+									<span className="text-4xl block mb-3">🍳</span>
+									<h3 className="text-lg font-bold text-stone-800">Menu Coming Soon</h3>
+									<p className="text-stone-500">The chef is updating the menu. Check back later!</p>
+								</div>
+							) : (
+								<div className="space-y-6">
+									{DAYS.map((day) => (
+										<DayMenu
+											key={day}
+											day={day}
+											items={groupedMenuItems[day]}
+											openItemModal={openItemModal}
+											addToCart={addToCart}
+											isCustomer={isCustomer}
+										/>
+									))}
+								</div>
+							)}
+						</div>
+
+						{/* Ratings & Reviews Section */}
+						<div className="bg-white rounded-2xl shadow-sm border border-stone-200/60 p-6">
+							<div className="flex items-center justify-between mb-6">
+								<h2 className="text-2xl font-bold text-stone-800">Reviews</h2>
+								<div className="flex items-center gap-1 bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
+									<FaStar className="text-amber-400" />
+									<span className="font-bold text-amber-700">{kitchen.rating?.toFixed(1) || '0.0'}</span>
+									<span className="text-amber-600/70 text-sm">({kitchen.totalRatings || 0})</span>
+								</div>
+							</div>
+
+							{/* Add Review Form */}
+							{isCustomer && (
+								<div className="bg-stone-50 rounded-xl p-4 mb-6 border border-stone-200">
+									<h3 className="font-semibold text-stone-800 mb-3">Rate your experience</h3>
+									<div className="flex gap-2 mb-3">
+										{[1, 2, 3, 4, 5].map((star) => (
+											<button
+												key={star}
+												onClick={() => setReviewRating(star)}
+												className={`text-2xl transition ${star <= reviewRating ? 'text-amber-400' : 'text-stone-300'}`}
+											>
+												★
+											</button>
+										))}
+									</div>
+									<textarea
+										value={reviewComment}
+										onChange={(e) => setReviewComment(e.target.value)}
+										placeholder="Share your thoughts about the food..."
+										className="w-full rounded-lg border border-stone-300 p-3 mb-3 focus:border-emerald-500 focus:outline-none text-sm"
+										rows="3"
+									/>
+									<button
+										onClick={submitReview}
+										disabled={reviewLoading}
+										className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition disabled:opacity-50"
+									>
+										{reviewLoading ? 'Submitting...' : 'Submit Review'}
+									</button>
+									{reviewError && <p className="text-red-500 text-sm mt-2">{reviewError}</p>}
+								</div>
+							)}
+
+							{/* Reviews List */}
+							<div className="space-y-4">
+								{reviews.length === 0 ? (
+									<p className="text-center text-stone-500 py-4">No reviews yet. Be the first to review!</p>
+								) : (
+									reviews.map((review) => (
+										<div key={review._id} className="border-b border-stone-100 last:border-0 pb-4 last:pb-0">
+											<div className="flex justify-between items-start mb-2">
+												<div className="flex items-center gap-2">
+													<div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs">
+														{review.user?.name?.charAt(0) || 'U'}
+													</div>
+													<span className="font-medium text-stone-800">{review.user?.name || 'Anonymous'}</span>
+												</div>
+												<div className="flex text-amber-400 text-sm">
+													{[...Array(5)].map((_, i) => (
+														<span key={i}>{i < review.rating ? '★' : '☆'}</span>
+													))}
+												</div>
+											</div>
+											<p className="text-stone-600 text-sm">{review.comment}</p>
+											<p className="text-xs text-stone-400 mt-2">{new Date(review.createdAt).toLocaleDateString()}</p>
+										</div>
+									))
+								)}
+							</div>
+						</div>
 					</div>
-				</section>
+
+					{/* Right Column: Subscription Manager (Sticky on Desktop) */}
+					<div className="lg:w-96 shrink-0">
+						<div className="sticky top-24 space-y-6">
+							<div className="bg-white rounded-2xl shadow-sm border border-stone-200/60 p-6">
+								<h2 className="text-xl font-bold text-stone-800 mb-2">Subscribe & Save</h2>
+								<p className="text-sm text-stone-500 mb-4">
+									Get fresh meals delivered automatically. Cancel anytime.
+								</p>
+								<SubscriptionManager restaurantId={id} />
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 
 			{/* Item Modal */}
@@ -546,35 +573,29 @@ export default function KitchenProfile() {
 				/>
 			)}
 
-			{/* Floating Cart */}
 			<FloatingCart />
 		</div>
 	);
 }
 
-// Day Menu Component - Compact
+// Day Menu Component
 const DayMenu = ({ day, items, openItemModal, addToCart, isCustomer }) => {
 	const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 	if (!items.lunch.length && !items.dinner.length) return null;
 
 	return (
-		<div className="bg-white rounded-xl shadow-md p-6">
+		<div className="bg-white rounded-xl border border-stone-200/60 p-5 hover:border-emerald-200 transition-colors">
 			<div className="flex items-center gap-3 mb-4">
-				<div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
-					<span className="text-white font-bold text-sm">
-						{capitalize(day).charAt(0)}
-					</span>
-				</div>
-				<h3 className="text-lg font-bold text-gray-900">
-					{capitalize(day)}
-				</h3>
+				<span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">
+					{day}
+				</span>
 			</div>
 
-			<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+			<div className="space-y-6">
 				{items.lunch.length > 0 && (
 					<div>
-						<h4 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
-							<span>🍽️</span> Lunch ({items.lunch.length})
+						<h4 className="text-sm font-semibold text-stone-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+							<span>☀️</span> Lunch
 						</h4>
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 							{items.lunch.map((item) => (
@@ -592,8 +613,8 @@ const DayMenu = ({ day, items, openItemModal, addToCart, isCustomer }) => {
 
 				{items.dinner.length > 0 && (
 					<div>
-						<h4 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
-							<span>🌙</span> Dinner ({items.dinner.length})
+						<h4 className="text-sm font-semibold text-stone-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+							<span>🌙</span> Dinner
 						</h4>
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 							{items.dinner.map((item) => (
@@ -613,13 +634,13 @@ const DayMenu = ({ day, items, openItemModal, addToCart, isCustomer }) => {
 	);
 };
 
-// Menu Item Card - Compact Square
+// Menu Item Card
 const MenuItemCard = ({ item, openItemModal, addToCart, isCustomer }) => (
 	<div
 		onClick={() => openItemModal(item)}
-		className="bg-gray-50 border border-gray-200 rounded-lg overflow-hidden hover:border-emerald-400 hover:shadow-md transition-all duration-200 cursor-pointer group"
+		className="bg-stone-50 border border-stone-200 rounded-lg overflow-hidden hover:border-emerald-400 cursor-pointer group flex h-24"
 	>
-		<div className="aspect-square relative overflow-hidden">
+		<div className="w-24 h-24 shrink-0 bg-stone-200">
 			<img
 				src={item.imageUrl || FALLBACK_IMAGE}
 				alt={item.name}
@@ -629,64 +650,55 @@ const MenuItemCard = ({ item, openItemModal, addToCart, isCustomer }) => (
 				}}
 				className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
 			/>
-			<div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded shadow-sm">
-				<span className="font-bold text-emerald-700 text-sm">
-					{item.price} BDT
-				</span>
-			</div>
-			{item.calories && (
-				<div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-2 py-1 rounded">
-					<span className="text-white text-xs font-semibold">
-						{item.calories} cal
-					</span>
-				</div>
-			)}
 		</div>
 
-		<div className="p-3">
-			<h4 className="font-bold text-gray-900 text-sm mb-1 group-hover:text-emerald-700 transition-colors">
-				{item.name}
-			</h4>
-			{item.description && (
-				<p className="text-gray-600 text-xs mb-2 line-clamp-1">
-					{item.description}
-				</p>
-			)}
-			<div className="flex items-center justify-between">
-				<span className="text-xs text-gray-500 capitalize">
-					{item.day} • {item.mealType}
-				</span>
+		<div className="p-3 flex flex-col justify-between flex-1 min-w-0">
+			<div>
+				<div className="flex justify-between items-start gap-2">
+					<h4 className="font-semibold text-stone-900 text-sm line-clamp-1 group-hover:text-emerald-700 transition-colors">
+						{item.name}
+					</h4>
+					<span className="text-xs font-bold text-emerald-700 whitespace-nowrap">
+						{item.price} ৳
+					</span>
+				</div>
+				{item.description && (
+					<p className="text-stone-500 text-xs line-clamp-1 mt-0.5">
+						{item.description}
+					</p>
+				)}
+			</div>
+			
+			<div className="flex justify-end mt-1">
 				{isCustomer ? (
 					<button
 						onClick={(e) => {
 							e.stopPropagation();
 							addToCart(item);
 						}}
-						className="bg-emerald-600 text-white px-3 py-1 rounded text-xs font-semibold hover:bg-emerald-700 transition-colors"
+						className="bg-emerald-600 text-white px-3 py-1 rounded text-xs font-semibold hover:bg-emerald-700 transition shadow-sm"
 					>
-						Add
+						+ Add
 					</button>
 				) : (
-					<div className="bg-gray-200 text-gray-500 px-3 py-1 rounded text-xs font-semibold text-center">
-						Login
-					</div>
+					<span className="text-xs text-stone-400 bg-stone-100 px-2 py-1 rounded">Login</span>
 				)}
 			</div>
 		</div>
 	</div>
 );
 
-// Item Modal - Compact
+// Item Modal
 const ItemModal = ({ item, closeModal, addToCart, isCustomer }) => (
 	<div
 		className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
 		onClick={closeModal}
 	>
 		<div
-			className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+			className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
 			onClick={(e) => e.stopPropagation()}
 		>
-			<div className="relative">
+			<div className="relative h-56">
 				<img
 					src={item.imageUrl || FALLBACK_IMAGE}
 					alt={item.name}
@@ -694,53 +706,48 @@ const ItemModal = ({ item, closeModal, addToCart, isCustomer }) => (
 						e.currentTarget.onerror = null;
 						e.currentTarget.src = FALLBACK_IMAGE;
 					}}
-					className="w-full h-48 object-cover"
+					className="w-full h-full object-cover"
 				/>
+				<div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
+					<div>
+						<h3 className="text-2xl font-bold text-white mb-1">
+							{item.name}
+						</h3>
+						<div className="flex items-center gap-3 text-white/90 text-sm font-medium">
+							<span className="capitalize bg-white/20 px-2 py-0.5 rounded">{item.mealType}</span>
+							{item.calories && (
+								<span>{item.calories} cal</span>
+							)}
+						</div>
+					</div>
+				</div>
 				<button
 					onClick={closeModal}
-					className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors"
+					className="absolute top-4 right-4 w-8 h-8 bg-black/30 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-black/50 transition"
 				>
 					✕
 				</button>
 			</div>
 
 			<div className="p-6">
-				<div className="flex justify-between items-start mb-4">
-					<div>
-						<h3 className="text-2xl font-bold text-gray-900 mb-2">
-							{item.name}
-						</h3>
-						<div className="flex items-center gap-3 text-gray-600 text-sm">
-							<span className="capitalize">{item.day}</span>
-							<span>•</span>
-							<span className="capitalize">{item.mealType}</span>
-							{item.calories && (
-								<>
-									<span>•</span>
-									<span>{item.calories} calories</span>
-								</>
-							)}
-						</div>
-					</div>
-					<div className="text-2xl font-bold text-emerald-700">
-						{item.price} BDT
-					</div>
+				<div className="flex justify-between items-center mb-4">
+					<span className="text-3xl font-bold text-emerald-700">{item.price} BDT</span>
 				</div>
 
 				{item.description && (
-					<p className="text-gray-700 mb-4">{item.description}</p>
+					<p className="text-stone-600 mb-6 leading-relaxed">{item.description}</p>
 				)}
 
 				{item.ingredients?.length > 0 && (
-					<div className="mb-6">
-						<h4 className="font-bold text-gray-900 mb-2">
+					<div className="mb-8">
+						<h4 className="font-semibold text-stone-900 mb-3 text-sm uppercase tracking-wider">
 							Ingredients
 						</h4>
 						<div className="flex flex-wrap gap-2">
 							{item.ingredients.map((ing, i) => (
 								<span
 									key={i}
-									className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-sm font-semibold"
+									className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-sm font-medium"
 								>
 									{ing}
 								</span>
@@ -749,28 +756,22 @@ const ItemModal = ({ item, closeModal, addToCart, isCustomer }) => (
 					</div>
 				)}
 
-				<div className="flex gap-3">
+				<div className="flex gap-3 pt-4 border-t border-stone-100">
 					{isCustomer ? (
 						<button
 							onClick={() => {
 								addToCart(item);
 								closeModal();
 							}}
-							className="flex-1 bg-emerald-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-emerald-700 transition-colors"
+							className="flex-1 bg-emerald-600 text-white px-6 py-3.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200"
 						>
 							Add to Cart
 						</button>
 					) : (
-						<div className="flex-1 bg-gray-200 text-gray-500 px-6 py-3 rounded-lg font-bold text-center">
+						<div className="flex-1 bg-stone-100 text-stone-400 px-6 py-3.5 rounded-xl font-bold text-center">
 							Login to Order
 						</div>
 					)}
-					<button
-						onClick={closeModal}
-						className="px-6 py-3 border border-gray-300 rounded-lg font-bold text-gray-700 hover:bg-gray-50 transition-colors"
-					>
-						Close
-					</button>
 				</div>
 			</div>
 		</div>

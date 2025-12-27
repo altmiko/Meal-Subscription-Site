@@ -48,9 +48,9 @@ export default function CustomerDashboard() {
 
 	const fetchWalletBalance = async () => {
 		try {
-			const res = await axiosInstance.get('/api/wallet/balance');
+			const res = await axiosInstance.get('/api/wallet');
 			if (res.data.success) {
-				setWalletBalance(res.data.balance || 0);
+				setWalletBalance(res.data.walletBalance || 0);
 			}
 		} catch (err) {
 			console.error('Failed to fetch wallet balance', err);
@@ -131,19 +131,45 @@ export default function CustomerDashboard() {
 
 	const nextPayment = getNextPaymentInfo();
 
+	const handleTestPayment = async () => {
+		if (!nextPayment) return;
+		
+		const confirm = window.confirm(`Pay ${nextPayment.amount} BDT for your active subscriptions now?`);
+		if (!confirm) return;
+
+		setLoading(true); // Reuse loading state or add a specific one? Reusing makes screen blank. Let's add a state or just use alert.
+		// Better: Add processing state. But for quickness, use alert interaction.
+
+		try {
+			const res = await axiosInstance.post('/api/subscriptions/trigger-payment');
+			if (res.data.success) {
+				alert(res.data.message);
+				// Refresh data
+				fetchWalletBalance();
+				fetchSubscriptions();
+			} else {
+				alert(res.data.message);
+			}
+		} catch (err) {
+			alert(err.response?.data?.message || "Payment failed");
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	if (loading) {
 		return (
 			<div className="min-h-screen bg-stone-50 flex items-center justify-center pt-24">
 				<div className="text-center">
 					<div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-700 border-t-transparent mx-auto mb-4"></div>
-					<p className="text-stone-600 text-lg">Loading your dashboard...</p>
+					<p className="text-stone-600 text-lg">Loading...</p>
 				</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-stone-50 via-emerald-50/30 to-stone-100 pt-24">
+		<div className="min-h-screen bg-gradient-to-br from-stone-50 via-emerald-50/30 to-stone-100 pt-12">
 			<div className="max-w-7xl mx-auto px-4 py-8">
 				{/* Header Section */}
 				<div className="mb-8">
@@ -195,7 +221,13 @@ export default function CustomerDashboard() {
 								{nextPayment ? (
 									<>
 										<p className="text-2xl font-bold text-stone-800">{nextPayment.amount.toFixed(0)} <span className="text-base font-normal text-stone-500">BDT</span></p>
-										<p className="mt-1 text-stone-500 text-sm">{nextPayment.date}</p>
+										<p className="mt-1 text-stone-500 text-sm mb-3">{nextPayment.date}</p>
+										<button
+											onClick={handleTestPayment}
+											className="w-full py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition shadow-sm"
+										>
+											Pay Now (Test)
+										</button>
 									</>
 								) : (
 									<>

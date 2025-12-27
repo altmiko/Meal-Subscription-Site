@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import Subscription from "../models/Subscription.js";
 import { User } from "../models/User.js";
 import { MenuItem } from "../models/MenuItem.js";
+import Payment from "../models/Payment.js";
 import Order from "../models/Order.js";
 
 const router = express.Router();
@@ -219,6 +220,76 @@ router.patch("/:id", protect, async (req, res) => {
   } catch (error) {
     console.error("Error updating subscription:", error);
     res.status(500).json({ success: false, message: "Failed to update subscription" });
+  }
+});
+
+// POST /api/subscriptions/trigger-payment - Manually trigger payment for active subscriptions (Demo)
+router.post("/trigger-payment", protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    // 1. Calculate total cost of active subscriptions
+    const subscriptions = await Subscription.find({ 
+      user: req.userId, 
+      status: "active" 
+    });
+
+    if (subscriptions.length === 0) {
+      return res.status(400).json({ success: false, message: "No active subscriptions to pay for" });
+    }
+
+    let totalAmount = 0;
+    for (const sub of subscriptions) {
+      let subTotal = 0;
+      if (sub.mealSelections && sub.mealSelections.length > 0) {
+        // Calculate based on selections (using stored price or current price? Stored is safer for subs)
+        // logic: sum(quantity * price)
+        subTotal = sub.mealSelections.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+      }
+      totalAmount += subTotal;
+    }
+
+    if (totalAmount <= 0) {
+      return res.status(400).json({ success: false, message: "Total payment amount is zero" });
+    }
+
+    // 2. Check wallet balance
+    if (user.walletBalance < totalAmount) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Insufficient wallet balance. Required: ${totalAmount} BDT, Available: ${user.walletBalance} BDT` 
+      });
+    }
+
+    // 3. Process Payment
+    user.walletBalance -= totalAmount;
+    await user.save();
+
+    const payment = await Payment.create({
+      user: req.userId,
+      amount: totalAmount,
+      type: "order_payment", // or 'subscription_payment' if added to enum, but order_payment works
+      method: "wallet",
+      status: "success",
+      metadata: {
+        note: "Subscription weekly payment (Demo)",
+        subscriptionCount: subscriptions.length
+      }
+    });
+
+    res.json({ 
+      success: true, 
+      message: `Successfully paid ${totalAmount} BDT for ${subscriptions.length} active subscriptions`,
+      data: {
+        payment,
+        newBalance: user.walletBalance
+      }
+    });
+
+  } catch (error) {
+    console.error("Error processing subscription payment:", error);
+    res.status(500).json({ success: false, message: "Failed to process payment" });
   }
 });
 

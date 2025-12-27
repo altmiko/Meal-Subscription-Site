@@ -10,7 +10,7 @@ const RatingStars = ({ rating = 0 }) => {
       {[1, 2, 3, 4, 5].map(star => (
         <span
           key={star}
-          className={star <= rounded ? 'text-yellow-400 text-sm' : 'text-gray-300 text-sm'}
+          className={star <= rounded ? 'text-amber-400 text-sm' : 'text-stone-300 text-sm'}
         >
           ★
         </span>
@@ -29,11 +29,25 @@ export default function Restaurants() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCuisine, setSelectedCuisine] = useState('');
   const [favorites, setFavorites] = useState([]);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     fetchRestaurants();
     fetchFavorites();
+    fetchUserData();
   }, []);
+
+  const fetchUserData = () => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        const parsed = JSON.parse(userData);
+        setUser(parsed);
+      } catch (e) {
+        console.error("Failed to parse user", e);
+      }
+    }
+  };
 
   /* ---------- Fetch Restaurants ---------- */
   const fetchRestaurants = async () => {
@@ -67,13 +81,12 @@ export default function Restaurants() {
   const fetchFavorites = async () => {
     try {
       const res = await axiosInstance.get('/api/auth/favorites');
-      // Handle both array of IDs and array of populated objects
       const favData = res.data.favorites || [];
       const favIds = favData.map(f => typeof f === 'string' ? f : f._id?.toString() || f.toString());
       setFavorites(favIds);
     } catch (err) {
       console.error('Error fetching favorites:', err);
-      setFavorites([]); // Set empty array on error
+      setFavorites([]);
     }
   };
 
@@ -83,13 +96,11 @@ export default function Restaurants() {
       const isFavorite = favorites.includes(restaurantId);
       
       if (isFavorite) {
-        const res = await axiosInstance.delete(`/api/auth/favorites/${restaurantId}`);
-        const updatedFavs = res.data.favorites.map(f => typeof f === 'string' ? f : f._id?.toString() || f.toString());
-        setFavorites(updatedFavs);
+        await axiosInstance.delete(`/api/auth/favorites/${restaurantId}`);
+        setFavorites(prev => prev.filter(id => id !== restaurantId));
       } else {
-        const res = await axiosInstance.post(`/api/auth/favorites/${restaurantId}`);
-        const updatedFavs = res.data.favorites.map(f => typeof f === 'string' ? f : f._id?.toString() || f.toString());
-        setFavorites(updatedFavs);
+        await axiosInstance.post(`/api/auth/favorites/${restaurantId}`);
+        setFavorites(prev => [...prev, restaurantId]);
       }
     } catch (err) {
       console.error('Error toggling favorite:', err);
@@ -123,91 +134,133 @@ export default function Restaurants() {
   };
 
   /* ---------- Loading / Error ---------- */
-  if (loading) return <div className="min-h-screen flex items-center justify-center pt-24">
-    <div className="animate-spin h-16 w-16 border-b-4 border-emerald-600 rounded-full" />
-  </div>;
-
-  if (error) return <div className="min-h-screen flex items-center justify-center pt-24">
-    <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
-      <h2 className="text-red-800 font-bold text-xl mb-2">Error Loading Restaurants</h2>
-      <p className="text-red-600 mb-6">{error}</p>
-      <button onClick={fetchRestaurants} className="bg-emerald-600 text-white px-6 py-3 rounded-lg">Try Again</button>
+  if (loading) return (
+    <div className="min-h-screen bg-stone-50 flex items-center justify-center pt-24">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-emerald-600 border-t-transparent mx-auto mb-4"></div>
+        <p className="text-stone-600 text-lg">Loading restaurants...</p>
+      </div>
     </div>
-  </div>;
+  );
 
   /* ---------- UI ---------- */
   return (
-    <div className="min-h-screen bg-white pt-24">
+    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-emerald-50/30 to-stone-100 pt-12 pb-24">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="text-5xl font-semibold mb-3">Restaurants</h1>
+        
+        {/* Header Dashboard Widgets (Only if user logged in) */}
+        {user && (
+          <div className="mb-12">
+            {/* Welcome / Title */}
+            <div className="bg-gradient-to-r from-emerald-700 to-teal-600 rounded-2xl p-8 text-white shadow-lg flex flex-col justify-center text-center md:text-left">
+              <h1 className="text-4xl font-bold mb-2">Discover Food</h1>
+              <p className="text-emerald-100 text-lg">Find your next favorite meal from our curated kitchens.</p>
+            </div>
+          </div>
+        )}
 
-          {/* Search & Filter */}
-          <div className="max-w-2xl mx-auto flex flex-col md:flex-row gap-4 mt-6">
+        {/* Search & Filter Header (If not user, show title here) */}
+        {!user && (
+          <div className="text-center mb-10">
+            <h1 className="text-5xl font-bold text-stone-800 mb-3 tracking-tight">Restaurants</h1>
+            <p className="text-stone-500 text-lg">Curated kitchens delivering fresh to your door.</p>
+          </div>
+        )}
+
+        {/* Search Bar */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-200/60 mb-10 flex flex-col md:flex-row gap-4">
+          <div className="flex-1 relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">🔍</span>
             <input
               type="text"
-              placeholder="Search by name or location..."
+              placeholder="Search by name, city, or area..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="flex-1 px-4 py-3 border rounded-lg"
+              className="w-full pl-11 pr-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition"
             />
-            {allCuisines.length > 0 && (
-              <select
-                value={selectedCuisine}
-                onChange={e => setSelectedCuisine(e.target.value)}
-                className="px-4 py-3 border rounded-lg bg-white"
-              >
-                <option value="">All Cuisines</option>
-                {allCuisines.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            )}
+          </div>
+          <div className="md:w-64 relative">
+             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">🥘</span>
+            <select
+              value={selectedCuisine}
+              onChange={e => setSelectedCuisine(e.target.value)}
+              className="w-full pl-11 pr-10 py-3 bg-stone-50 border border-stone-200 rounded-xl appearance-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition cursor-pointer"
+            >
+              <option value="">All Cuisines</option>
+              {allCuisines.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none">▼</span>
           </div>
         </div>
 
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center mb-8">
+            <h2 className="text-red-800 font-bold text-xl mb-2">Error Loading Restaurants</h2>
+            <p className="text-red-600 mb-6">{error}</p>
+            <button onClick={fetchRestaurants} className="bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition">Try Again</button>
+          </div>
+        )}
+
         {/* Restaurant Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredRestaurants.map(r => (
-            <div key={r._id} onClick={() => navigate(`/restaurants/${r._id}`)} className="bg-white rounded-2xl border shadow-sm hover:shadow-lg cursor-pointer transition">
-              <div className="h-48 bg-emerald-100 rounded-t-2xl border border-black flex items-center justify-center text-6xl">
-                🍽️
+            <div 
+              key={r._id} 
+              onClick={() => navigate(`/restaurants/${r._id}`)} 
+              className="group bg-white rounded-2xl border border-stone-200/60 shadow-sm hover:shadow-xl hover:border-emerald-200 hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col"
+            >
+              {/* Image Placeholder */}
+              <div className="h-48 bg-gradient-to-br from-stone-100 to-stone-200 relative overflow-hidden">
+                <div className="absolute inset-0 flex items-center justify-center text-6xl group-hover:scale-110 transition-transform duration-500">
+                  🍽️
+                </div>
+                
+                {/* Favorite Button */}
+                <button
+                  onClick={e => { 
+                    e.stopPropagation(); 
+                    toggleFavorite(r._id); 
+                  }}
+                  className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm shadow-sm flex items-center justify-center hover:bg-white transition"
+                >
+                  <span className={`text-xl transition-all ${favorites.includes(r._id) ? 'scale-110' : 'grayscale opacity-40 hover:opacity-70 hover:scale-110'}`}>
+                    ❤️
+                  </span>
+                </button>
+
+                {/* Cuisine Tag */}
+                {r.cuisineTypes && r.cuisineTypes[0] && (
+                  <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md text-white px-3 py-1 rounded-full text-xs font-medium">
+                    {r.cuisineTypes[0]}
+                  </div>
+                )}
               </div>
 
-              <div className="p-6">
-                {/* Name + Favorite */}
-                <div className="flex justify-between items-start mb-1">
-                  <h2 className="text-xl font-semibold flex items-center gap-2">
+              {/* Content */}
+              <div className="p-6 flex flex-col flex-1">
+                <div className="flex justify-between items-start mb-2">
+                  <h2 className="text-xl font-bold text-stone-800 group-hover:text-emerald-700 transition line-clamp-1">
                     {r.name}
-                    <button
-                      onClick={e => { 
-                        e.stopPropagation(); 
-                        toggleFavorite(r._id); 
-                      }}
-                      className="text-2xl transition-colors duration-300"
-                      style={{ 
-                        background: 'transparent', 
-                        border: 'none',
-                        filter: favorites.includes(r._id) ? 'none' : 'grayscale(100%) opacity(0.3)'
-                      }}
-                    >
-                      ❤️
-                    </button>
                   </h2>
-
-                  {r.totalRatings > 0 ? (
-                    <div className="text-right">
-                      <RatingStars rating={r.rating} />
-                      <p className="text-xs text-gray-600">{r.rating.toFixed(1)} ({r.totalRatings})</p>
-                    </div>
-                  ) : <p className="text-xs text-gray-400 mb-2">No ratings yet</p>}
+                  <div className="flex items-center gap-1 bg-stone-50 px-2 py-1 rounded-lg border border-stone-100">
+                    <span className="text-amber-400 text-sm">★</span>
+                    <span className="text-sm font-bold text-stone-700">{r.rating.toFixed(1)}</span>
+                    <span className="text-xs text-stone-400">({r.totalRatings})</span>
+                  </div>
                 </div>
 
-                {r.location && <p className="text-sm text-gray-600 mb-4">📍 {formatAddress(r.location)}</p>}
+                <div className="flex items-start gap-2 text-stone-500 mb-6 text-sm">
+                  <span className="shrink-0 mt-0.5">📍</span>
+                  <span className="line-clamp-2">{formatAddress(r.location)}</span>
+                </div>
 
-                <button
-                  onClick={e => { e.stopPropagation(); navigate(`/restaurants/${r._id}`); }}
-                  className="w-full bg-emerald-600 text-white py-2.5 rounded-lg font-semibold"
-                >View Menu</button>
+                <div className="mt-auto pt-6 border-t border-stone-100">
+                  <button className="w-full py-3 rounded-xl bg-emerald-50 text-emerald-700 font-semibold hover:bg-emerald-600 hover:text-white transition-colors duration-300 flex items-center justify-center gap-2 group/btn">
+                    View Menu
+                    <span className="group-hover/btn:translate-x-1 transition-transform">→</span>
+                  </button>
+                </div>
               </div>
             </div>
           ))}
