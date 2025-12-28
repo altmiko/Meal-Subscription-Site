@@ -5,8 +5,6 @@ import axiosInstance from '../api/axios';
 const DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const FALLBACK_IMAGE = 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=800';
-
 export default function SubscriptionManager({ restaurantId: propRestaurantId }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -16,9 +14,11 @@ export default function SubscriptionManager({ restaurantId: propRestaurantId }) 
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedMeals, setSelectedMeals] = useState({}); // { day_mealType: { menuItemId, quantity } }
+  const [selectedMeals, setSelectedMeals] = useState({});
   const [isRepeating, setIsRepeating] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [showPauseModal, setShowPauseModal] = useState(false);
+  const [subscriptionToPause, setSubscriptionToPause] = useState(null);
 
   useEffect(() => {
     fetchSubscriptions();
@@ -40,7 +40,6 @@ export default function SubscriptionManager({ restaurantId: propRestaurantId }) 
     try {
       setLoading(true);
       const { data } = await axiosInstance.get('/api/subscriptions');
-      // If restaurantId is provided, filter. Otherwise show all (backend already filters by user)
       const visibleSubs = restaurantId 
         ? (data.data || []).filter(sub => sub.restaurantId._id === restaurantId)
         : (data.data || []);
@@ -53,9 +52,25 @@ export default function SubscriptionManager({ restaurantId: propRestaurantId }) 
     }
   };
 
-  const handlePackageMeals = (mealType) => {
+  const getDaysToInclude = () => {
+    const today = new Date().getDay();
+    const startDay = today === 0 ? 1 : (today + 1) % 7;
+    const daysToInclude = [];
+    const daysUntilSaturday = (6 - startDay + 7) % 7 + 1;
+    
+    for (let i = 0; i < daysUntilSaturday; i++) {
+      const dayIndex = (startDay + i) % 7;
+      daysToInclude.push(DAYS[dayIndex]);
+    }
+    
+    return daysToInclude;
+  };
+
+  const handlePackageRestOfWeek = (mealType) => {
     const packageMeals = {};
-    DAYS.forEach(day => {
+    const daysToInclude = getDaysToInclude();
+    
+    daysToInclude.forEach(day => {
       const key = `${day}_${mealType}`;
       const items = menuItems.filter(item => item.day === day && item.mealType === mealType);
       if (items.length > 0) {
@@ -65,6 +80,7 @@ export default function SubscriptionManager({ restaurantId: propRestaurantId }) 
         };
       }
     });
+    
     setSelectedMeals(packageMeals);
     setShowCreateModal(true);
   };
@@ -116,7 +132,7 @@ export default function SubscriptionManager({ restaurantId: propRestaurantId }) 
         isRepeating,
       });
       
-      alert('Subscription created successfully! Your upfront payment for this week has been processed.');
+      alert('Subscription created successfully!');
       setShowCreateModal(false);
       setSelectedMeals({});
       fetchSubscriptions();
@@ -128,28 +144,45 @@ export default function SubscriptionManager({ restaurantId: propRestaurantId }) 
     }
   };
 
-  const handlePause = async (subscriptionId) => {
+  const handlePauseClick = (subscription) => {
+    setSubscriptionToPause(subscription);
+    setShowPauseModal(true);
+  };
+
+  const handlePauseConfirm = async () => {
+    if (!subscriptionToPause) return;
+    
     try {
-      await axiosInstance.patch(`/api/subscriptions/${subscriptionId}/pause`);
+      await axiosInstance.patch(`/api/subscriptions/${subscriptionToPause._id}/pause`, {
+        cancelRemainingOrders: true
+      });
+      
+      alert('Subscription paused. Remaining orders for this week cancelled.');
+      setShowPauseModal(false);
+      setSubscriptionToPause(null);
       fetchSubscriptions();
     } catch (error) {
       console.error('Failed to pause subscription:', error);
-      alert('Failed to pause subscription');
+      alert(error.response?.data?.message || 'Failed to pause subscription');
     }
   };
 
   const handleResume = async (subscriptionId) => {
     try {
-      await axiosInstance.patch(`/api/subscriptions/${subscriptionId}/resume`);
+      await axiosInstance.patch(`/api/subscriptions/${subscriptionId}/resume`, {
+        recreateRemainingOrders: true
+      });
+      
+      alert('Subscription resumed! Orders recreated for remaining days.');
       fetchSubscriptions();
     } catch (error) {
       console.error('Failed to resume subscription:', error);
-      alert('Failed to resume subscription');
+      alert(error.response?.data?.message || 'Failed to resume subscription');
     }
   };
 
   const handleCancel = async (subscriptionId) => {
-    if (!window.confirm('Are you sure you want to cancel this subscription?')) return;
+    if (!window.confirm('Cancel subscription? All future orders will be cancelled.')) return;
     
     try {
       await axiosInstance.delete(`/api/subscriptions/${subscriptionId}`);
@@ -177,6 +210,17 @@ export default function SubscriptionManager({ restaurantId: propRestaurantId }) 
     );
   }
 
+  const getCurrentDayMessage = () => {
+    const today = new Date().getDay();
+    const dayName = DAY_NAMES[today];
+    const nextDay = today === 0 ? 'Monday' : DAY_NAMES[(today + 1) % 7];
+    
+    if (today === 0) {
+      return `It's ${dayName}! Subscriptions will start from ${nextDay}.`;
+    }
+    return `Subscriptions will start from tomorrow (${nextDay}).`;
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-6">
@@ -193,28 +237,30 @@ export default function SubscriptionManager({ restaurantId: propRestaurantId }) 
         )}
       </div>
 
-      {/* Package Meals Quick Actions - Only show if in Restaurant context */}
       {restaurantId && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h3 className="font-semibold text-gray-900 mb-3">Quick Package Meals</h3>
+        <div className="mb-6 p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg border border-emerald-100">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xl">⚡</span>
+            <h3 className="font-semibold text-gray-900">Quick Start</h3>
+          </div>
+          <p className="text-xs text-emerald-700 mb-3">{getCurrentDayMessage()}</p>
           <div className="flex gap-3">
             <button
-              onClick={() => handlePackageMeals('lunch')}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition font-semibold"
+              onClick={() => handlePackageRestOfWeek('lunch')}
+              className="flex-1 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition font-semibold shadow-md"
             >
-              📦 Package All Lunches (1x each)
+              ☀️ Add Lunch for Rest of Week
             </button>
             <button
-              onClick={() => handlePackageMeals('dinner')}
-              className="px-4 py-2 bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 transition font-semibold"
+              onClick={() => handlePackageRestOfWeek('dinner')}
+              className="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg hover:from-indigo-600 hover:to-indigo-700 transition font-semibold shadow-md"
             >
-              📦 Package All Dinners (1x each)
+              🌙 Add Dinner for Rest of Week
             </button>
           </div>
         </div>
       )}
 
-      {/* Existing Subscriptions */}
       {subscriptions.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           {restaurantId ? (
@@ -237,15 +283,15 @@ export default function SubscriptionManager({ restaurantId: propRestaurantId }) 
             <SubscriptionCard
               key={sub._id}
               subscription={sub}
-              onPause={handlePause}
+              onPause={() => handlePauseClick(sub)}
               onResume={handleResume}
               onCancel={handleCancel}
+              navigate={navigate}
             />
           ))}
         </div>
       )}
 
-      {/* Create Subscription Modal */}
       {showCreateModal && (
         <CreateSubscriptionModal
           groupedMenuItems={groupedMenuItems}
@@ -262,11 +308,69 @@ export default function SubscriptionManager({ restaurantId: propRestaurantId }) 
           creating={creating}
         />
       )}
+
+      {showPauseModal && subscriptionToPause && (
+        <PauseConfirmModal
+          subscription={subscriptionToPause}
+          onConfirm={handlePauseConfirm}
+          onCancel={() => {
+            setShowPauseModal(false);
+            setSubscriptionToPause(null);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function SubscriptionCard({ subscription, onPause, onResume, onCancel }) {
+function PauseConfirmModal({ subscription, onConfirm, onCancel }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onCancel}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">⏸️</span>
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Pause Subscription?</h3>
+          <p className="text-sm text-gray-600">
+            Pausing will cancel all remaining orders for this week from <strong>{subscription.restaurantId?.name}</strong>.
+          </p>
+        </div>
+
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+          <div className="flex items-start gap-2 text-sm text-orange-800">
+            <span className="text-lg">⚠️</span>
+            <div>
+              <p className="font-semibold mb-1">What happens:</p>
+              <ul className="text-xs space-y-1 ml-4 list-disc">
+                <li>Remaining orders for this week cancelled</li>
+                <li>No charges while paused</li>
+                <li>Resume anytime to restart</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 font-semibold text-gray-700"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 px-4 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-semibold"
+          >
+            Pause Subscription
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SubscriptionCard({ subscription, onPause, onResume, onCancel, navigate }) {
   const isActive = subscription.status === 'active';
   const isPaused = subscription.status === 'paused';
   const isCancelled = subscription.status === 'cancelled';
@@ -275,9 +379,7 @@ function SubscriptionCard({ subscription, onPause, onResume, onCancel }) {
     <div className={`border-2 rounded-lg p-4 ${isActive ? 'border-emerald-200 bg-emerald-50' : isPaused ? 'border-orange-200 bg-orange-50' : 'border-gray-200'}`}>
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h3 className="font-bold text-lg text-gray-900">
-            {subscription.restaurantId?.name || 'Restaurant'}
-          </h3>
+          <h3 className="font-bold text-lg text-gray-900">{subscription.restaurantId?.name || 'Restaurant'}</h3>
           <div className="text-sm text-gray-600 mt-1">
             <span className={`px-2 py-1 rounded text-xs font-semibold ${
               isActive ? 'bg-emerald-200 text-emerald-800' :
@@ -287,86 +389,65 @@ function SubscriptionCard({ subscription, onPause, onResume, onCancel }) {
             }`}>
               {subscription.status.toUpperCase()}
             </span>
-            {subscription.isRepeating && (
-              <span className="ml-2 text-gray-500">🔄 Repeating Weekly</span>
-            )}
+            {subscription.isRepeating && <span className="ml-2 text-gray-500">🔄 Repeating Weekly</span>}
           </div>
         </div>
         <div className="flex gap-2">
-          {isActive && (
-            <button
-              onClick={() => onPause(subscription._id)}
-              className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm font-semibold"
-            >
+          {/* {isActive && (
+            <button onClick={() => onPause(subscription._id)} className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm font-semibold">
               ⏸️ Pause
             </button>
           )}
           {isPaused && (
-            <button
-              onClick={() => onResume(subscription._id)}
-              className="px-3 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm font-semibold"
-            >
+            <button onClick={() => onResume(subscription._id)} className="px-3 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm font-semibold">
               ▶️ Resume
             </button>
-          )}
+          )} */}
           {subscription.status === 'halted' && (
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] text-red-500 font-bold animate-pulse mb-1">Insufficient Funds!</span>
-              <button
-                onClick={() => navigate('/wallet')}
-                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-semibold shadow-sm"
-              >
-                💰 Top Up Wallet
-              </button>
-            </div>
+            <button onClick={() => navigate('/wallet')} className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-semibold">
+              💰 Top Up
+            </button>
           )}
           {!isCancelled && (
-            <button
-              onClick={() => onCancel(subscription._id)}
-              className="px-3 py-1 bg-stone-100 text-stone-500 rounded hover:bg-red-50 hover:text-red-600 text-sm font-semibold transition-colors"
-            >
-              ✕ Cancel
+            <button onClick={() => onCancel(subscription._id)} className="px-3 py-1 bg-stone-100 text-stone-500 rounded hover:bg-red-50 hover:text-red-600 text-sm font-semibold">
+              ✕
             </button>
-          ) }
+          )}
         </div>
       </div>
 
+      {isPaused && (
+        <div className="mb-3 p-3 bg-orange-100 border border-orange-200 rounded-lg text-sm text-orange-800">
+          ⏸️ <strong>Paused</strong> - Resume to restart deliveries
+        </div>
+      )}
+
       <div className="bg-white/50 rounded-lg p-3 mb-4 border border-emerald-100">
         <div className="flex items-center gap-2 text-xs text-emerald-800 font-bold mb-1">
-          <span className="text-sm">📅</span> Schedule Info
+          📅 Schedule Info
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-[10px] text-emerald-600 uppercase">Starts On</p>
-            <p className="text-xs font-bold text-gray-800">{new Date(subscription.startDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <p className="text-xs font-bold text-gray-800">{new Date(subscription.startDate).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
           </div>
           <div>
             <p className="text-[10px] text-emerald-600 uppercase">Daily Deduction</p>
-            <p className="text-xs font-bold text-gray-800">Variable based on meals</p>
+            <p className="text-xs font-bold text-gray-800">Variable</p>
           </div>
         </div>
       </div>
       
-      <div className="grid grid-cols-7 gap-2 mt-4">
+      <div className="grid grid-cols-7 gap-2">
         {DAYS.map(day => {
-          const lunchMeals = subscription.mealSelections?.filter(m => m.day === day && m.mealType === 'lunch') || [];
-          const dinnerMeals = subscription.mealSelections?.filter(m => m.day === day && m.mealType === 'dinner') || [];
+          const lunch = subscription.mealSelections?.filter(m => m.day === day && m.mealType === 'lunch') || [];
+          const dinner = subscription.mealSelections?.filter(m => m.day === day && m.mealType === 'dinner') || [];
           
           return (
             <div key={day} className="text-center border rounded p-2 bg-white">
-              <div className="text-xs font-semibold text-gray-700 mb-1">
-                {DAY_NAMES[DAYS.indexOf(day)].substring(0, 3)}
-              </div>
-              {lunchMeals.length > 0 && (
-                <div className="text-xs text-emerald-700 mb-1">
-                  🍽️ {lunchMeals.map(m => `${m.quantity}x`).join(', ')}
-                </div>
-              )}
-              {dinnerMeals.length > 0 && (
-                <div className="text-xs text-emerald-700">
-                  🌙 {dinnerMeals.map(m => `${m.quantity}x`).join(', ')}
-                </div>
-              )}
+              <div className="text-xs font-semibold text-gray-700 mb-1">{DAY_NAMES[DAYS.indexOf(day)].substring(0, 3)}</div>
+              {lunch.length > 0 && <div className="text-xs text-emerald-700 mb-1">🍽️ {lunch.map(m => `${m.quantity}x`).join(', ')}</div>}
+              {dinner.length > 0 && <div className="text-xs text-emerald-700">🌙 {dinner.map(m => `${m.quantity}x`).join(', ')}</div>}
             </div>
           );
         })}
@@ -375,17 +456,7 @@ function SubscriptionCard({ subscription, onPause, onResume, onCancel }) {
   );
 }
 
-function CreateSubscriptionModal({
-  groupedMenuItems,
-  selectedMeals,
-  isRepeating,
-  onMealSelect,
-  onQuantityChange,
-  onRepeatingChange,
-  onCreate,
-  onClose,
-  creating,
-}) {
+function CreateSubscriptionModal({ groupedMenuItems, selectedMeals, isRepeating, onMealSelect, onQuantityChange, onRepeatingChange, onCreate, onClose, creating }) {
   const totalPrice = Object.entries(selectedMeals).reduce((sum, [key, value]) => {
     const [day, mealType] = key.split('_');
     const items = groupedMenuItems[day]?.[mealType] || [];
@@ -396,32 +467,23 @@ function CreateSubscriptionModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="p-6 border-b">
-          <div className="flex justify-between items-center">
-            <h3 className="text-2xl font-bold text-gray-900">Create Subscription</h3>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-              ✕
-            </button>
-          </div>
+        <div className="p-6 border-b flex justify-between items-center">
+          <h3 className="text-2xl font-bold">Create Subscription</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
         </div>
 
         <div className="p-6">
           <div className="mb-4">
             <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={isRepeating}
-                onChange={e => onRepeatingChange(e.target.checked)}
-                className="w-4 h-4"
-              />
-              <span className="font-semibold text-gray-900">Repeat weekly</span>
+              <input type="checkbox" checked={isRepeating} onChange={e => onRepeatingChange(e.target.checked)} className="w-4 h-4" />
+              <span className="font-semibold">Repeat weekly</span>
             </label>
             <p className="text-sm text-gray-600 ml-6 mt-1">
-              {isRepeating ? 'Subscription will automatically renew each week' : 'One-time subscription for this week only'}
+              {isRepeating ? 'Auto-renews each week' : 'One-time for this week'}
             </p>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-4 mb-6">
             {DAYS.map(day => (
               <DayMealSelector
                 key={day}
@@ -437,40 +499,22 @@ function CreateSubscriptionModal({
             ))}
           </div>
 
-          <div className="mt-6 p-4 bg-stone-50 rounded-xl border border-stone-100">
+          <div className="p-4 bg-stone-50 rounded-xl border mb-6">
             <div className="flex justify-between items-center mb-2">
-              <span className="font-semibold text-stone-700">Estimated Weekly Total:</span>
+              <span className="font-semibold">Weekly Total:</span>
               <span className="text-xl font-bold text-emerald-700">{totalPrice.toFixed(2)} BDT</span>
             </div>
-            <div className="space-y-2">
-              <div className="flex items-start gap-2 text-[11px] text-stone-500 leading-tight">
-                <span className="text-emerald-500 font-bold">✓</span>
-                <span>Subscriptions start <strong>immediately</strong> from today.</span>
-              </div>
-              <div className="flex items-start gap-2 text-[11px] text-stone-500 leading-tight">
-                <span className="text-emerald-500 font-bold">✓</span>
-                <span>Payment for the first week is <strong>charged upfront</strong> from your wallet.</span>
-              </div>
-              <div className="flex items-start gap-2 text-[11px] text-stone-500 leading-tight">
-                <span className="text-emerald-500 font-bold">✓</span>
-                <span>If your wallet balance is low, your subscription will be <strong>halted</strong> until you top up.</span>
-              </div>
+            <div className="space-y-1 text-[11px] text-stone-600">
+              <p>✓ Starts from tomorrow (or Monday if Sunday)</p>
+              <p>✓ First week charged upfront</p>
+              <p>✓ Subscription halts if wallet balance low</p>
             </div>
           </div>
 
-          <div className="mt-6 flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-stone-200 rounded-xl hover:bg-stone-50 font-semibold text-stone-600 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={onCreate}
-              disabled={creating || Object.keys(selectedMeals).length === 0}
-              className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-100 transition-all hover:shadow-emerald-200 active:scale-95"
-            >
-              {creating ? 'Setting up...' : 'Start Subscription'}
+          <div className="flex gap-3">
+            <button onClick={onClose} className="flex-1 px-4 py-2 border rounded-xl hover:bg-stone-50 font-semibold">Cancel</button>
+            <button onClick={onCreate} disabled={creating || Object.keys(selectedMeals).length === 0} className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-semibold disabled:opacity-50">
+              {creating ? 'Creating...' : 'Start Subscription'}
             </button>
           </div>
         </div>
@@ -479,109 +523,52 @@ function CreateSubscriptionModal({
   );
 }
 
-function DayMealSelector({
-  day,
-  dayName,
-  lunchItems,
-  dinnerItems,
-  selectedLunch,
-  selectedDinner,
-  onMealSelect,
-  onQuantityChange,
-}) {
+function DayMealSelector({ day, dayName, lunchItems, dinnerItems, selectedLunch, selectedDinner, onMealSelect, onQuantityChange }) {
   return (
     <div className="border rounded-lg p-4">
-      <h4 className="font-semibold text-gray-900 mb-3">{dayName}</h4>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Lunch */}
+      <h4 className="font-semibold mb-3">{dayName}</h4>
+      <div className="grid md:grid-cols-2 gap-4">
         <div>
           <div className="text-sm font-semibold text-emerald-700 mb-2">🍽️ Lunch</div>
           {lunchItems.length === 0 ? (
-            <p className="text-sm text-gray-400">No lunch items available</p>
+            <p className="text-sm text-gray-400">No lunch items</p>
           ) : (
-            <select
-              value={selectedLunch?.menuItemId || ''}
-              onChange={e => {
-                if (e.target.value) {
-                  onMealSelect(day, 'lunch', e.target.value, selectedLunch?.quantity || 1);
-                } else {
-                  onQuantityChange(day, 'lunch', 0);
-                }
-              }}
-              className="w-full border rounded p-2 mb-2"
-            >
-              <option value="">Select lunch...</option>
-              {lunchItems.map(item => (
-                <option key={item._id} value={item._id}>
-                  {item.name} - {item.price} BDT
-                </option>
-              ))}
-            </select>
-          )}
-          {selectedLunch && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => onQuantityChange(day, 'lunch', (selectedLunch.quantity || 1) - 1)}
-                className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-              >
-                -
-              </button>
-              <span className="text-sm font-semibold">{selectedLunch.quantity || 1}</span>
-              <button
-                onClick={() => onQuantityChange(day, 'lunch', (selectedLunch.quantity || 1) + 1)}
-                className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-              >
-                +
-              </button>
-            </div>
+            <>
+              <select value={selectedLunch?.menuItemId || ''} onChange={e => e.target.value ? onMealSelect(day, 'lunch', e.target.value, selectedLunch?.quantity || 1) : onQuantityChange(day, 'lunch', 0)} className="w-full border rounded p-2 mb-2">
+                <option value="">Select lunch...</option>
+                {lunchItems.map(item => <option key={item._id} value={item._id}>{item.name} - {item.price} BDT</option>)}
+              </select>
+              {selectedLunch && (
+                <div className="flex items-center gap-2">
+                  <button onClick={() => onQuantityChange(day, 'lunch', (selectedLunch.quantity || 1) - 1)} className="px-2 py-1 bg-gray-200 rounded">-</button>
+                  <span className="text-sm font-semibold">{selectedLunch.quantity || 1}</span>
+                  <button onClick={() => onQuantityChange(day, 'lunch', (selectedLunch.quantity || 1) + 1)} className="px-2 py-1 bg-gray-200 rounded">+</button>
+                </div>
+              )}
+            </>
           )}
         </div>
-
-        {/* Dinner */}
         <div>
           <div className="text-sm font-semibold text-emerald-700 mb-2">🌙 Dinner</div>
           {dinnerItems.length === 0 ? (
-            <p className="text-sm text-gray-400">No dinner items available</p>
+            <p className="text-sm text-gray-400">No dinner items</p>
           ) : (
-            <select
-              value={selectedDinner?.menuItemId || ''}
-              onChange={e => {
-                if (e.target.value) {
-                  onMealSelect(day, 'dinner', e.target.value, selectedDinner?.quantity || 1);
-                } else {
-                  onQuantityChange(day, 'dinner', 0);
-                }
-              }}
-              className="w-full border rounded p-2 mb-2"
-            >
-              <option value="">Select dinner...</option>
-              {dinnerItems.map(item => (
-                <option key={item._id} value={item._id}>
-                  {item.name} - {item.price} BDT
-                </option>
-              ))}
-            </select>
-          )}
-          {selectedDinner && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => onQuantityChange(day, 'dinner', (selectedDinner.quantity || 1) - 1)}
-                className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-              >
-                -
-              </button>
-              <span className="text-sm font-semibold">{selectedDinner.quantity || 1}</span>
-              <button
-                onClick={() => onQuantityChange(day, 'dinner', (selectedDinner.quantity || 1) + 1)}
-                className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
-              >
-                +
-              </button>
-            </div>
+            <>
+              <select value={selectedDinner?.menuItemId || ''} onChange={e => e.target.value ? onMealSelect(day, 'dinner', e.target.value, selectedDinner?.quantity || 1) : onQuantityChange(day, 'dinner', 0)} className="w-full border rounded p-2 mb-2">
+                <option value="">Select dinner...</option>
+                {dinnerItems.map(item => <option key={item._id} value={item._id}>{item.name} - {item.price} BDT</option>)}
+              </select>
+              {selectedDinner && (
+                <div className="flex items-center gap-2">
+                  <button onClick={() => onQuantityChange(day, 'dinner', (selectedDinner.quantity || 1) - 1)} className="px-2 py-1 bg-gray-200 rounded">-</button>
+                  <span className="text-sm font-semibold">{selectedDinner.quantity || 1}</span>
+                  <button onClick={() => onQuantityChange(day, 'dinner', (selectedDinner.quantity || 1) + 1)} className="px-2 py-1 bg-gray-200 rounded">+</button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
     </div>
   );
 }
-
