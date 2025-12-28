@@ -14,14 +14,18 @@ router.post("/delivery-staff/:staffId", protect, async (req, res) => {
     const { rating, comment, orderId } = req.body;
     const { staffId } = req.params;
 
-    if (!rating || rating < 1 || rating > 5)
-      return res.status(400).json({ message: "Rating must be between 1 and 5" });
+    const existing = await DeliveryStaffReview.findOne({ order: orderId });
+    if (existing) {
+      return res.status(400).json({ message: "You have already reviewed this delivery." });
+    }
 
-    const review = await DeliveryStaffReview.findOneAndUpdate(
-      { deliveryStaff: staffId, user: req.user.id, order: orderId },
-      { rating, comment, deliveryStaff: staffId, user: req.user.id, order: orderId },
-      { upsert: true, new: true, runValidators: true }
-    );
+    const review = await DeliveryStaffReview.create({
+      deliveryStaff: staffId,
+      user: req.user.id,
+      order: orderId,
+      rating,
+      comment
+    });
 
     // Recalculate delivery staff aggregate rating
     const stats = await DeliveryStaffReview.aggregate([

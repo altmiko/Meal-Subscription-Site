@@ -103,15 +103,12 @@ export const updateDeliveryLocation = async (req, res) => {
 
               if (referral) {
                 const rewardAmount = 30;
+                
+                // Reward Referrer
                 const referrer = await User.findById(customer.referredBy);
                 if (referrer) {
                   referrer.walletBalance = (referrer.walletBalance || 0) + rewardAmount;
                   await referrer.save();
-
-                  referral.status = "rewarded";
-                  referral.rewardAmount = rewardAmount;
-                  referral.rewardedAt = new Date();
-                  await referral.save();
 
                   await Payment.create({
                     user: referrer._id,
@@ -121,11 +118,35 @@ export const updateDeliveryLocation = async (req, res) => {
                     method: "wallet",
                     status: "success",
                     metadata: {
+                      kind: "referrer_reward",
                       referredUserId: String(delivery.customer),
                       orderId: String(delivery.order)
                     }
                   });
                 }
+
+                // Reward Referred User (Customer)
+                customer.walletBalance = (customer.walletBalance || 0) + rewardAmount;
+                await customer.save();
+
+                await Payment.create({
+                  user: customer._id,
+                  order: delivery.order,
+                  amount: rewardAmount,
+                  type: "referral_reward",
+                  method: "wallet",
+                  status: "success",
+                  metadata: {
+                    kind: "referred_user_reward",
+                    referrerId: String(customer.referredBy),
+                    orderId: String(delivery.order)
+                  }
+                });
+
+                referral.status = "rewarded";
+                referral.rewardAmount = rewardAmount * 2; // Total reward given out
+                referral.rewardedAt = new Date();
+                await referral.save();
               }
             }
           } catch (rewardError) {

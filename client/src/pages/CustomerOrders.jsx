@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axiosInstance from "../api/axios";
-import { FaBoxOpen, FaCheckCircle, FaClock, FaMapMarkerAlt, FaMotorcycle, FaTimesCircle, FaStore, FaChevronRight, FaReceipt } from "react-icons/fa";
+import { FaBoxOpen, FaCheckCircle, FaClock, FaMapMarkerAlt, FaMotorcycle, FaTimesCircle, FaStore, FaChevronRight, FaReceipt, FaStar } from "react-icons/fa";
+import RatingModal from "../components/RatingModal";
+
 
 const CustomerOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -10,6 +12,8 @@ const CustomerOrders = () => {
   const [error, setError] = useState("");
   const [updatingId, setUpdatingId] = useState(null);
   const [tracking, setTracking] = useState({}); // orderId -> tracking info
+  const [ratingModal, setRatingModal] = useState({ isOpen: false, staff: null, orderId: null });
+
 
   const formatDeliveryAddress = (address) => {
     if (!address) return "";
@@ -140,6 +144,7 @@ const CustomerOrders = () => {
                             isUpcoming={false}
                             formatDeliveryAddress={formatDeliveryAddress} 
                             userAddress={user?.address}
+                            onRateDriver={(staff, oid) => setRatingModal({ isOpen: true, staff, orderId: oid })}
                         />
                     ))}
                 </div>
@@ -147,12 +152,26 @@ const CustomerOrders = () => {
                 <p className="text-stone-500 italic">No past orders found.</p>
              )}
         </div>
+
+        <RatingModal 
+          isOpen={ratingModal.isOpen}
+          onClose={() => setRatingModal({ isOpen: false, staff: null, orderId: null })}
+          staff={ratingModal.staff}
+          orderId={ratingModal.orderId}
+          onSubmitSuccess={() => {
+            setOrders(prev => prev.map(o => o._id === ratingModal.orderId ? { ...o, isReviewed: true } : o));
+            alert("Thank you for your feedback!");
+          }}
+        />
+
       </div>
     </div>
+
   );
 };
 
-const OrderCard = ({ order, isUpcoming, cancelOrder, updatingId, fetchTracking, tracking, formatDeliveryAddress, userAddress }) => {
+const OrderCard = ({ order, isUpcoming, cancelOrder, updatingId, fetchTracking, tracking, formatDeliveryAddress, userAddress, onRateDriver }) => {
+
     const statusColors = {
         pending: "bg-amber-100 text-amber-700 border-amber-200",
         accepted: "bg-blue-100 text-blue-700 border-blue-200",
@@ -256,6 +275,19 @@ const OrderCard = ({ order, isUpcoming, cancelOrder, updatingId, fetchTracking, 
                     )}
                 </div>
             )}
+
+            {/* Past Orders Review Action */}
+            {!isUpcoming && (order.status === 'delivered' || order.status === 'completed') && order.delivery?.deliveryStaff && !order.isReviewed && (
+                <div className="p-4 bg-emerald-50/30 border-t border-emerald-100 flex justify-end">
+                    <button
+                        onClick={() => onRateDriver(order.delivery.deliveryStaff, order._id)}
+                        className="bg-white text-emerald-600 border border-emerald-200 text-sm font-bold px-5 py-2 rounded-lg shadow-sm hover:bg-emerald-600 hover:text-white transition flex items-center gap-2"
+                    >
+                        <FaStar /> Rate Driver
+                    </button>
+                </div>
+            )}
+
 
             {/* Tracking Info Panel */}
             {tracking && (

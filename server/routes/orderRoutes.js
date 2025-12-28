@@ -5,6 +5,8 @@ import Payment from "../models/Payment.js";
 import Subscription from "../models/Subscription.js";
 import Delivery from "../models/Delivery.js";
 import Referral from "../models/Referral.js";
+import DeliveryStaffReview from "../models/DeliveryStaffReview.js";
+
 import jwt from "jsonwebtoken";
 
 const router = express.Router();
@@ -301,6 +303,61 @@ router.patch("/:orderId/status", protect, async (req, res) => {
     order.status = status;
     const updated = await order.save();
 
+    // Replicate referral logic if completed
+    if (status === "completed" || status === "delivered") {
+      try {
+        const customer = await User.findById(order.userId);
+        if (customer && customer.referredBy) {
+          const referral = await Referral.findOne({
+            referrer: customer.referredBy,
+            referredUser: order.userId,
+            status: "pending"
+          });
+
+          if (referral) {
+            const rewardAmount = 30;
+            const referrer = await User.findById(customer.referredBy);
+            
+            // Reward Referrer
+            if (referrer) {
+              referrer.walletBalance = (referrer.walletBalance || 0) + rewardAmount;
+              await referrer.save();
+              await Payment.create({
+                user: referrer._id,
+                order: order._id,
+                amount: rewardAmount,
+                type: "referral_reward",
+                method: "wallet",
+                status: "success",
+                metadata: { kind: "referrer_reward", referredUserId: String(order.userId), orderId: String(order._id) }
+              });
+            }
+
+            // Reward Referred User
+            customer.walletBalance = (customer.walletBalance || 0) + rewardAmount;
+            await customer.save();
+            await Payment.create({
+              user: customer._id,
+              order: order._id,
+              amount: rewardAmount,
+              type: "referral_reward",
+              method: "wallet",
+              status: "success",
+              metadata: { kind: "referred_user_reward", referrerId: String(customer.referredBy), orderId: String(order._id) }
+            });
+
+            referral.status = "rewarded";
+            referral.rewardAmount = rewardAmount * 2;
+            referral.rewardedAt = new Date();
+            await referral.save();
+          }
+        }
+      } catch (err) {
+        console.error("Referral processing error:", err);
+      }
+    }
+
+
     res.json(updated);
   } catch (error) {
     console.error("Failed to update order status:", error);
@@ -332,12 +389,16 @@ router.get("/my", protect, async (req, res) => {
         });
         const delivery = await Delivery.findOne({ order: order._id })
           .populate("deliveryStaff", "name phone");
+        
+        const review = await DeliveryStaffReview.exists({ order: order._id });
 
         return {
           ...order.toObject(),
           payment: payment || null,
           delivery: delivery || null,
+          isReviewed: !!review
         };
+
       })
     );
 
@@ -380,11 +441,15 @@ router.get("/:orderId", protect, async (req, res) => {
     const delivery = await Delivery.findOne({ order: order._id })
       .populate("deliveryStaff", "name phone");
 
+    const review = await DeliveryStaffReview.exists({ order: order._id });
+
     res.json({
       ...order.toObject(),
       payment: payment || null,
       delivery: delivery || null,
+      isReviewed: !!review
     });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to fetch order" });
