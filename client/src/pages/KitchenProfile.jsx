@@ -95,32 +95,66 @@ export default function KitchenProfile() {
 	}, [id]);
 
 	const addToCart = (item) => {
-		const deliveryDate = item.date ? new Date(item.date) : new Date();
-		if (item.mealType === 'lunch') deliveryDate.setHours(13, 0, 0, 0);
-		else if (item.mealType === 'dinner') deliveryDate.setHours(20, 0, 0, 0);
+	// Get the current date
+	const today = new Date();
+	const currentDayIndex = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+	
+	// Get the target day index from the item
+	const targetDayIndex = DAYS.indexOf(item.day.toLowerCase());
+	
+	// Calculate days until the target day
+	let daysUntilTarget = targetDayIndex - currentDayIndex;
+	
+	// If the target day has already passed this week, schedule for next week
+	if (daysUntilTarget < 0) {
+		daysUntilTarget += 7;
+	}
+	
+	// If it's the same day but the meal time has passed, schedule for next week
+	if (daysUntilTarget === 0) {
+		const now = new Date();
+		const mealHour = item.mealType === 'lunch' ? 13 : 20;
+		
+		if (now.getHours() >= mealHour) {
+			daysUntilTarget = 7;
+		}
+	}
+	
+	// Create delivery date
+	const deliveryDate = new Date(today);
+	deliveryDate.setDate(today.getDate() + daysUntilTarget);
+	
+	// Set meal time
+	if (item.mealType === 'lunch') {
+		deliveryDate.setHours(13, 0, 0, 0);
+	} else if (item.mealType === 'dinner') {
+		deliveryDate.setHours(20, 0, 0, 0);
+	}
 
-		const itemWithDelivery = {
-			...item,
-			quantity: 1,
-			date: deliveryDate.toISOString(),
-			deliveryDate: deliveryDate.toISOString(),
-			restaurant: id,
-			restaurantId: id,
-		};
-
-		const exists = cart.some(
-			(ci) =>
-				ci._id === item._id &&
-				ci.date === itemWithDelivery.date &&
-				ci.mealType === item.mealType &&
-				ci.day === item.day
-		);
-		if (exists)
-			return alert(`${item.name} is already in your cart for this time.`);
-
-		setCart((prev) => [...prev, itemWithDelivery]);
-		alert(`${item.name} added to cart!`);
+	const itemWithDelivery = {
+		...item,
+		quantity: 1,
+		date: deliveryDate.toISOString(),
+		deliveryDate: deliveryDate.toISOString(),
+		restaurant: id,
+		restaurantId: id,
 	};
+
+	const exists = cart.some(
+		(ci) =>
+			ci._id === item._id &&
+			ci.date === itemWithDelivery.date &&
+			ci.mealType === item.mealType &&
+			ci.day === item.day
+	);
+	
+	if (exists) {
+		return alert(`${item.name} is already in your cart for this time.`);
+	}
+
+	setCart((prev) => [...prev, itemWithDelivery]);
+	alert(`${item.name} added to cart for ${deliveryDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}!`);
+};
 
 	const submitReview = async () => {
 		if (!reviewComment.trim()) return alert('Please write a comment');
